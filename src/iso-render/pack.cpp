@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <numeric>
 #include <vector>
@@ -19,20 +20,68 @@ struct rect_t
     int height;
 };
 
-template <typename Project>
-auto make_image_comparator(image_t* images, Project proj)
+// We sort permutation indices with a tri-state qsort_r comparator instead of
+// std::sort + strict-weak predicate. The C-library sort's choice for equal
+// keys differs from libc++'s introsort, and the bin-packer is sensitive to
+// that choice: equal-area sprites swapped between runs would shuffle the
+// atlas layout and break byte-equivalence with historical output. Keeping
+// qsort_r locks in the legacy ordering that the goldens were captured with.
+using qsort_compare_fn = int (*)(const void*, const void*, void*);
+
+#if defined(_WIN32) || defined(_WIN64) || defined(__WINDOWS__)
+struct qsort_thunk_t { void* arg; qsort_compare_fn cmp; };
+inline int qsort_thunk_swap(void* s, const void* a, const void* b)
 {
-    return [images, proj](int a, int b) {
-        return proj(images[a]) > proj(images[b]);
-    };
+    auto* t = static_cast<qsort_thunk_t*>(s);
+    return t->cmp(a, b, t->arg);
+}
+inline void qsort_r_compat(void* base, std::size_t n, std::size_t w, qsort_compare_fn cmp, void* arg)
+{
+    qsort_thunk_t t{arg, cmp};
+    qsort_s(base, n, w, &qsort_thunk_swap, &t);
+}
+#elif defined(__APPLE__) || defined(__FreeBSD__)
+struct qsort_thunk_t { void* arg; qsort_compare_fn cmp; };
+inline int qsort_thunk_swap(void* s, const void* a, const void* b)
+{
+    auto* t = static_cast<qsort_thunk_t*>(s);
+    return t->cmp(a, b, t->arg);
+}
+inline void qsort_r_compat(void* base, std::size_t n, std::size_t w, qsort_compare_fn cmp, void* arg)
+{
+    qsort_thunk_t t{arg, cmp};
+    qsort_r(base, n, w, &t, &qsort_thunk_swap);
+}
+#else // glibc-style: compar last
+inline void qsort_r_compat(void* base, std::size_t n, std::size_t w, qsort_compare_fn cmp, void* arg)
+{
+    qsort_r(base, n, w, cmp, arg);
+}
+#endif
+
+template <typename Project>
+int legacy_compare(const void* a, const void* b, void* arg)
+{
+    auto* images = static_cast<image_t*>(arg);
+    Project proj{};
+    auto ka = proj(images[*static_cast<const int*>(a)]);
+    auto kb = proj(images[*static_cast<const int*>(b)]);
+    if (ka == kb) return 0;
+    return ka < kb ? 1 : -1; // descending
 }
 
+struct project_area      { int operator()(const image_t& i) const { return static_cast<int>(i.width) * i.height; } };
+struct project_perimeter { int operator()(const image_t& i) const { return i.width + i.height; } };
+struct project_max_dim   { int operator()(const image_t& i) const { return std::max<int>(i.width, i.height); } };
+struct project_width     { int operator()(const image_t& i) const { return static_cast<int>(i.width); } };
+struct project_height    { int operator()(const image_t& i) const { return static_cast<int>(i.height); } };
+
 int pack_rects_fixed_with_comparator(image_t* images, int num_images, int width, int height, int* x_coords, int* y_coords,
-                                     auto&& compare)
+                                     qsort_compare_fn compare)
 {
     std::vector<int> permutation(num_images);
     std::iota(permutation.begin(), permutation.end(), 0);
-    std::sort(permutation.begin(), permutation.end(), compare);
+    qsort_r_compat(permutation.data(), num_images, sizeof(int), compare, images);
 
     std::vector<rect_t> empty_spaces;
     empty_spaces.reserve(10000);
@@ -94,17 +143,11 @@ int pack_rects_fixed_with_comparator(image_t* images, int num_images, int width,
 
 int pack_rects_fixed(image_t* images, int num_images, int width, int height, int* x_coords, int* y_coords)
 {
-    auto area      = [](const image_t& i) { return static_cast<int>(i.width) * i.height; };
-    auto perimeter = [](const image_t& i) { return i.width + i.height; };
-    auto max_dim   = [](const image_t& i) { return std::max<int>(i.width, i.height); };
-    auto width_p   = [](const image_t& i) { return static_cast<int>(i.width); };
-    auto height_p  = [](const image_t& i) { return static_cast<int>(i.height); };
-
-    if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, make_image_comparator(images, area))) return 1;
-    if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, make_image_comparator(images, perimeter))) return 1;
-    if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, make_image_comparator(images, max_dim))) return 1;
-    if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, make_image_comparator(images, width_p))) return 1;
-    if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, make_image_comparator(images, height_p))) return 1;
+    if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, &legacy_compare<project_area>))      return 1;
+    if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, &legacy_compare<project_perimeter>)) return 1;
+    if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, &legacy_compare<project_max_dim>))   return 1;
+    if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, &legacy_compare<project_width>))     return 1;
+    if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, &legacy_compare<project_height>))    return 1;
     return 0;
 }
 
