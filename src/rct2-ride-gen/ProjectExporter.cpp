@@ -240,7 +240,7 @@ namespace RCTGen
             add_string_table(strings, "capacity",    project.capacity);
             json_object_set_new(json, "strings", strings);
 
-            return JsonRef::adopt(json);
+            return adoptJson(json);
         }
 
         ExportResult<void> render_sprites(
@@ -259,7 +259,7 @@ namespace RCTGen
             for (int i = 0; i < 3; i++)
             {
                 json_array_append_new(images_json,
-                    makeImageObject("images/preview.png", 0, 0, -1, -1, -1, -1).release());
+                    releaseJson(makeImageObject("images/preview.png", 0, 0, -1, -1, -1, -1)));
             }
 
             for (std::size_t i = 0; i < project.vehicles.size(); i++)
@@ -313,11 +313,11 @@ namespace RCTGen
                 for (int k = 0; k < num_images; k++)
                 {
                     json_array_append_new(images_json,
-                        makeImageObject(
+                        releaseJson(makeImageObject(
                             image_path,
                             images[k].x_offset, images[k].y_offset,
                             x_coords[k], y_coords[k],
-                            images[k].width, images[k].height).release());
+                            images[k].width, images[k].height)));
                 }
                 const fs::path out_image_path = fs::path("object") / image_path;
                 std::FILE* out = std::fopen(out_image_path.string().c_str(), "wb");

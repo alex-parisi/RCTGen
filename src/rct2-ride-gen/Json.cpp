@@ -7,6 +7,31 @@
 
 namespace RCTGen
 {
+    namespace
+    {
+        void json_deleter(json_t* p) noexcept { json_decref(p); }
+    }
+
+    JsonRef adoptJson(json_t* raw)
+    {
+        if (raw == nullptr) return {};
+        return JsonRef(raw, &json_deleter);
+    }
+
+    JsonRef borrowJson(json_t* raw)
+    {
+        if (raw == nullptr) return {};
+        json_incref(raw);
+        return adoptJson(raw);
+    }
+
+    json_t* releaseJson(JsonRef ref) noexcept
+    {
+        json_t* p = ref.get();
+        if (p) json_incref(p);
+        return p;
+    }
+
     JsonResult<JsonRef> loadFile(const std::filesystem::path& path)
     {
         json_error_t err;
@@ -16,7 +41,7 @@ namespace RCTGen
             return std::unexpected(std::format(
                 "{} at line {} column {} ({})", err.text, err.line, err.column, err.source));
         }
-        return JsonRef::adopt(raw);
+        return adoptJson(raw);
     }
 
     JsonResult<std::int64_t> readInt(json_t* value, std::string_view property)
@@ -148,12 +173,12 @@ namespace RCTGen
             {
                 return std::unexpected(std::string("Empty array"));
             }
-            return JsonRef::borrow(value);
+            return borrowJson(value);
         }
         // Wrap scalar in a 1-element array.
         json_t* arr = json_array();
         json_array_append(arr, value);
-        return JsonRef::adopt(arr);
+        return adoptJson(arr);
     }
 
     JsonRef makeImageObject(
@@ -174,6 +199,6 @@ namespace RCTGen
         if (src_height > 0) json_object_set_new(image, "srcHeight", json_integer(src_height));
         json_object_set_new(image, "palette", json_string("keep"));
 
-        return JsonRef::adopt(image);
+        return adoptJson(image);
     }
 }

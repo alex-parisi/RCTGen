@@ -16,7 +16,7 @@ namespace RCTGen
         log_line(std::format(fmt, std::forward<Args>(args)...));
     }
 
-    inline void print_msg(std::string_view message)
+    inline void print_msg(const std::string_view message)
     {
         log_line(message);
     }
