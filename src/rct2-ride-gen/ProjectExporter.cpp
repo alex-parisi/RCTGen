@@ -268,7 +268,7 @@ namespace RCTGen
                 const auto sf = static_cast<SpriteFlag>(project.sprite_flags);
                 const auto vf = static_cast<VehicleFlag>(vehicle.flags);
                 const int num_frames = has_flag(vf, VehicleFlag::restraintAnimation) ? 4 : 1;
-                const int num_car_images = count_sprites(sf, vf);
+                const int num_car_images = countSprites(sf, vf);
                 const int num_images = num_car_images * (1 + static_cast<int>(vehicle.riders.size()));
 
                 std::vector<image_t> images(num_images, image_t{});
@@ -280,7 +280,7 @@ namespace RCTGen
                     context_begin_render(&context);
                     add_model_to_context(project, context, vehicle.model, frame, 0);
                     context_finalize_render(&context);
-                    base += render_vehicle_frame(&context, sf, frame, images.data() + base);
+                    base += renderVehicleFrame(&context, sf, frame, images.data() + base);
                     context_end_render(&context);
                 }
 
@@ -296,7 +296,7 @@ namespace RCTGen
                             add_model_to_context(project, context, vehicle.riders[k], frame, 1);
                         add_model_to_context(project, context, vehicle.riders[j], frame, 0);
                         context_finalize_render(&context);
-                        base += render_vehicle_frame(
+                        base += renderVehicleFrame(
                             &context, sf, frame,
                             images.data() + (j + 1) * num_car_images + base);
                         context_end_render(&context);

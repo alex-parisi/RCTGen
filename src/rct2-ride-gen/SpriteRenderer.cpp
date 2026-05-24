@@ -27,10 +27,10 @@ namespace RCTGen
         // run (so the "gentle" slope angle is atan(1/sqrt(6))).
         const double kTileSlope = 1.0 / std::sqrt(6.0);
 
-        const double kFlat = 0.0;
+        constexpr double kFlat = 0.0;
         const double kGentle = std::atan(kTileSlope);
         const double kSteep = std::atan(4.0 * kTileSlope);
-        const double kVertical = kPi_2;
+        constexpr double kVertical = kPi_2;
         const double kFlatGentleTransition = (kFlat + kGentle) / 2.0;
         const double kGentleSteepTransition = (kGentle + kSteep) / 2.0;
         const double kSteepVerticalTransition = (kSteep + kVertical) / 2.0;
@@ -43,13 +43,13 @@ namespace RCTGen
         constexpr double kBankTransition = kBank / 2.0;
 
         // Corkscrew angle decomposition.
-        constexpr double corkscrew_right_yaw(double a) {
+        constexpr double corkscrewRightYaw(const double a) {
             return std::atan2(0.5 * (1.0 - std::cos(a)), 1.0 - 0.5 * (1.0 - std::cos(a)));
         }
-        constexpr double corkscrew_right_pitch(double a) {
+        constexpr double corkscrewRightPitch(const double a) {
             return -std::asin(-std::sin(a) / std::sqrt(2.0));
         }
-        constexpr double corkscrew_right_roll(double a) {
+        constexpr double corkscrewRightRoll(const double a) {
             return -std::atan2(std::sin(a) / std::sqrt(2.0), std::cos(a));
         }
 
@@ -65,20 +65,20 @@ namespace RCTGen
         // float at the function-argument boundary, then promote back to double
         // for the per-frame yaw step. Skipping the round-trip shifts a handful
         // of antialiased edge pixels.
-        void render_rotation(
-            context_t* context, int num_frames,
-            double pitch_d, double roll_d, double yaw_d,
+        void renderRotation(
+            context_t* context, const int numFrames,
+            const double pitchD, const double rollD, const double yawD,
             image_t* images)
         {
-            const float pitch = static_cast<float>(pitch_d);
-            const float roll  = static_cast<float>(roll_d);
-            const float yaw   = static_cast<float>(yaw_d);
-            for (int i = 0; i < num_frames; i++)
+            const auto pitch = static_cast<float>(pitchD);
+            const auto roll  = static_cast<float>(rollD);
+            const auto yaw   = static_cast<float>(yawD);
+            for (int i = 0; i < numFrames; i++)
             {
                 context_render_view(
                     context,
                     matrix_mult(
-                        rotate_y(static_cast<float>(yaw + (2.0 * i * kPi) / num_frames)),
+                        rotate_y(static_cast<float>(yaw + (2.0 * i * kPi) / numFrames)),
                         matrix_mult(rotate_z(pitch), rotate_x(roll))),
                     images + i);
             }
@@ -86,7 +86,7 @@ namespace RCTGen
 
         // --- Rotation tables for each sprite group --------------------------------
 
-        const Rotation kFlatSlopeRot[] = {
+        constexpr Rotation kFlatSlopeRot[] = {
             {32, kFlat, 0, 0},
         };
         const Rotation kGentleSlopeRot[] = {
@@ -112,7 +112,7 @@ namespace RCTGen
             {4,  kGentleDiagonal,                0, kPi_4}, {4, -kGentleDiagonal,                0, kPi_4},
             {4,  kSteepDiagonal,                 0, kPi_4}, {4, -kSteepDiagonal,                 0, kPi_4},
         };
-        const Rotation kBankingRot[] = {
+        constexpr Rotation kBankingRot[] = {
             {8,  kFlat,  kBankTransition, 0}, {8,  kFlat, -kBankTransition, 0},
             {32, kFlat,  kBank,            0}, {32, kFlat, -kBank,            0},
         };
@@ -162,7 +162,7 @@ namespace RCTGen
             {4, -kFlatGentleTransition,  kBank, 0}, {4, -kFlatGentleTransition, -kBank, 0},
         };
 
-        // Zero-G roll is the most elaborate group; the last sub-group conditionally
+        // Zero-G roll is the most elaborate group; the last subgroup conditionally
         // adopts an 8-frame variant when DiveLoop is also enabled.
         const Rotation kZeroGRollBaseRot[] = {
             // Gentle bank 67.5
@@ -215,48 +215,41 @@ namespace RCTGen
             {8, -kSteepDiagonal,  kPi_2,        kPi_8}, {8, -kSteepDiagonal, -kPi_2,        kPi_8},
         };
 
-        const std::array<double, 5> kCorkscrewAngles = {
+        constexpr std::array kCorkscrewAngles = {
             2.0 * kPi_12, 4.0 * kPi_12, kPi_2, 8.0 * kPi_12, 10.0 * kPi_12,
         };
 
         // Build the corkscrew rotation table once at static init.
-        std::vector<Rotation> build_corkscrew_rotations()
+        std::vector<Rotation> buildCorkscrewRotations()
         {
             std::vector<Rotation> v;
             v.reserve(20);
             // Right
-            for (double a : kCorkscrewAngles)
-                v.push_back({4, corkscrew_right_pitch(a), corkscrew_right_roll(a), corkscrew_right_yaw(a)});
-            for (double a : kCorkscrewAngles)
-                v.push_back({4, corkscrew_right_pitch(-a), corkscrew_right_roll(-a), corkscrew_right_yaw(-a)});
+            for (const double a : kCorkscrewAngles)
+                v.push_back({4, corkscrewRightPitch(a), corkscrewRightRoll(a), corkscrewRightYaw(a)});
+            for (const double a : kCorkscrewAngles)
+                v.push_back({4, corkscrewRightPitch(-a), corkscrewRightRoll(-a), corkscrewRightYaw(-a)});
             // Left mirrors right
-            for (double a : kCorkscrewAngles)
-                v.push_back({4, -corkscrew_right_pitch(-a), -corkscrew_right_roll(a), -corkscrew_right_yaw(a)});
-            for (double a : kCorkscrewAngles)
-                v.push_back({4, -corkscrew_right_pitch(a), -corkscrew_right_roll(-a), -corkscrew_right_yaw(-a)});
+            for (const double a : kCorkscrewAngles)
+                v.push_back({4, -corkscrewRightPitch(-a), -corkscrewRightRoll(a), -corkscrewRightYaw(a)});
+            for (const double a : kCorkscrewAngles)
+                v.push_back({4, -corkscrewRightPitch(a), -corkscrewRightRoll(-a), -corkscrewRightYaw(-a)});
             return v;
         }
-        const std::vector<Rotation>& corkscrew_rotations()
+        const std::vector<Rotation>& corkscrewRotations()
         {
-            static const std::vector<Rotation> v = build_corkscrew_rotations();
+            static const std::vector<Rotation> v = buildCorkscrewRotations();
             return v;
         }
 
-        int sum_frames(std::span<const Rotation> rots)
-        {
-            int n = 0;
-            for (const auto& r : rots) n += r.num_frames;
-            return n;
-        }
-
-        int render_group(
-            context_t* context, std::span<const Rotation> rots, image_t* base)
+        int renderGroup(
+            context_t* context, const std::span<const Rotation> rots, image_t* base)
         {
             int written = 0;
-            for (const auto& r : rots)
+            for (const auto&[num_frames, pitch, roll, yaw] : rots)
             {
-                render_rotation(context, r.num_frames, r.pitch, r.roll, r.yaw, base + written);
-                written += r.num_frames;
+                renderRotation(context, num_frames, pitch, roll, yaw, base + written);
+                written += num_frames;
             }
             return written;
         }
@@ -267,46 +260,46 @@ namespace RCTGen
         constexpr int kRestraintPerFrame = 4;
     } // namespace
 
-    int count_sprites(SpriteFlag sf, VehicleFlag vf)
+    int countSprites(const SpriteFlag spriteFlags, const VehicleFlag vehicleFlags)
     {
         int n = 0;
-        if (has_flag(sf, SpriteFlag::flatSlope))                    n +=  32;
-        if (has_flag(sf, SpriteFlag::gentleSlope))                  n +=  72;
-        if (has_flag(sf, SpriteFlag::steepSlope))                   n +=  80;
-        if (has_flag(sf, SpriteFlag::verticalSlope))                n += 116;
-        if (has_flag(sf, SpriteFlag::diagonalSlope))                n +=  24;
-        if (has_flag(sf, SpriteFlag::banking))                      n +=  80;
-        if (has_flag(sf, SpriteFlag::inlineTwist))                  n +=  40;
-        if (has_flag(sf, SpriteFlag::slopeBankTransition))          n += 128;
-        if (has_flag(sf, SpriteFlag::diagonalBankTransition))       n +=  16;
-        if (has_flag(sf, SpriteFlag::slopedBankTransition))         n +=  16;
-        if (has_flag(sf, SpriteFlag::diagonalSlopedBankTransition)) n +=  48;
-        if (has_flag(sf, SpriteFlag::slopedBankedTurn))             n += 128;
-        if (has_flag(sf, SpriteFlag::bankedSlopeTransition))        n +=  16;
-        if (has_flag(sf, SpriteFlag::corkscrew))                    n +=  80;
-        if (has_flag(sf, SpriteFlag::zeroGRoll))                    n += 160;
-        if (has_flag(sf, SpriteFlag::diveLoop))                     n += 112;
-        if (has_flag(vf, VehicleFlag::restraintAnimation))          n +=  kRestraintFrames;
+        if (has_flag(spriteFlags, SpriteFlag::flatSlope))                    n +=  32;
+        if (has_flag(spriteFlags, SpriteFlag::gentleSlope))                  n +=  72;
+        if (has_flag(spriteFlags, SpriteFlag::steepSlope))                   n +=  80;
+        if (has_flag(spriteFlags, SpriteFlag::verticalSlope))                n += 116;
+        if (has_flag(spriteFlags, SpriteFlag::diagonalSlope))                n +=  24;
+        if (has_flag(spriteFlags, SpriteFlag::banking))                      n +=  80;
+        if (has_flag(spriteFlags, SpriteFlag::inlineTwist))                  n +=  40;
+        if (has_flag(spriteFlags, SpriteFlag::slopeBankTransition))          n += 128;
+        if (has_flag(spriteFlags, SpriteFlag::diagonalBankTransition))       n +=  16;
+        if (has_flag(spriteFlags, SpriteFlag::slopedBankTransition))         n +=  16;
+        if (has_flag(spriteFlags, SpriteFlag::diagonalSlopedBankTransition)) n +=  48;
+        if (has_flag(spriteFlags, SpriteFlag::slopedBankedTurn))             n += 128;
+        if (has_flag(spriteFlags, SpriteFlag::bankedSlopeTransition))        n +=  16;
+        if (has_flag(spriteFlags, SpriteFlag::corkscrew))                    n +=  80;
+        if (has_flag(spriteFlags, SpriteFlag::zeroGRoll))                    n += 160;
+        if (has_flag(spriteFlags, SpriteFlag::diveLoop))                     n += 112;
+        if (has_flag(vehicleFlags, VehicleFlag::restraintAnimation))          n +=  kRestraintFrames;
         return n;
     }
 
-    int render_vehicle_frame(
-        context_t* context, SpriteFlag sprite_flags, int frame, image_t* out)
+    int renderVehicleFrame(
+        context_t* context, const SpriteFlag spriteFlags, const int frame, image_t* out)
     {
         if (frame > 0)
         {
             printMsg("Rendering restraint animation");
-            render_rotation(context, kRestraintPerFrame, 0, 0, 0, out);
+            renderRotation(context, kRestraintPerFrame, 0, 0, 0, out);
             return kRestraintPerFrame;
         }
 
         int base = 0;
 
-        auto emit_if = [&](SpriteFlag f, const char* msg, std::span<const Rotation> rots) {
-            if (has_flag(sprite_flags, f))
+        auto emit_if = [&](const SpriteFlag f, const char* msg, const std::span<const Rotation> rots) {
+            if (has_flag(spriteFlags, f))
             {
                 printMsg(msg);
-                base += render_group(context, rots, out + base);
+                base += renderGroup(context, rots, out + base);
             }
         };
 
@@ -325,25 +318,25 @@ namespace RCTGen
         emit_if(SpriteFlag::slopedBankedTurn,       "Rendering sloped banked sprites",                 kSlopedBankedTurnRot);
         emit_if(SpriteFlag::bankedSlopeTransition,  "Rendering banked slope transition sprites",       kBankedSlopeTransitionRot);
 
-        if (has_flag(sprite_flags, SpriteFlag::zeroGRoll))
+        if (has_flag(spriteFlags, SpriteFlag::zeroGRoll))
         {
             printMsg("Rendering zero G roll sprites");
-            base += render_group(context, kZeroGRollBaseRot, out + base);
-            std::span<const Rotation> sb22 = has_flag(sprite_flags, SpriteFlag::diveLoop)
+            base += renderGroup(context, kZeroGRollBaseRot, out + base);
+            const std::span<const Rotation> sb22 = has_flag(spriteFlags, SpriteFlag::diveLoop)
                 ? std::span<const Rotation>(kZeroGRollSteepBank22_8)
                 : std::span<const Rotation>(kZeroGRollSteepBank22_4);
-            base += render_group(context, sb22, out + base);
+            base += renderGroup(context, sb22, out + base);
         }
-        if (has_flag(sprite_flags, SpriteFlag::diveLoop))
+        if (has_flag(spriteFlags, SpriteFlag::diveLoop))
         {
             printMsg("Rendering dive loop sprites");
-            base += render_group(context, kDiveLoopRot, out + base);
+            base += renderGroup(context, kDiveLoopRot, out + base);
         }
-        if (has_flag(sprite_flags, SpriteFlag::corkscrew))
+        if (has_flag(spriteFlags, SpriteFlag::corkscrew))
         {
             printMsg("Rendering corkscrew sprites");
-            const auto& rots = corkscrew_rotations();
-            base += render_group(context, rots, out + base);
+            const auto& rots = corkscrewRotations();
+            base += renderGroup(context, rots, out + base);
         }
 
         return base;

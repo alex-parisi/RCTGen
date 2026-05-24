@@ -494,7 +494,7 @@ namespace RCTGen
         {
             Vehicle& v = project.vehicles[i];
             if (auto r = load_vehicle(v, json_array_get(vehicles, i), project); !r) return r;
-            v.num_sprites = static_cast<std::uint32_t>(count_sprites(
+            v.num_sprites = static_cast<std::uint32_t>(countSprites(
                 static_cast<SpriteFlag>(project.sprite_flags),
                 static_cast<VehicleFlag>(v.flags)));
             project.num_sprites += v.num_sprites;

@@ -10,13 +10,13 @@ namespace RCTGen
 {
     // Number of sprite images emitted for the given sprite-flag set, plus
     // restraint-animation contribution from the vehicle flag set.
-    [[nodiscard]] int count_sprites(SpriteFlag sprite_flags, VehicleFlag vehicle_flags);
+    [[nodiscard]] int countSprites(SpriteFlag spriteFlags, VehicleFlag vehicleFlags);
 
     // Render a vehicle (one frame: 0 for static, >0 for restraint animation
     // frames). Writes images into `out`. Returns the number of images written.
-    int render_vehicle_frame(
+    int renderVehicleFrame(
         context_t* context,
-        SpriteFlag sprite_flags,
+        SpriteFlag spriteFlags,
         int frame,
         image_t* out);
 }
