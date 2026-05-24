@@ -1,6 +1,10 @@
 add_executable(makevehicle
         main.cpp
-        project.cpp
+        Logging.cpp
+        Json.cpp
+        ProjectLoader.cpp
+        SpriteRenderer.cpp
+        ProjectExporter.cpp
 )
 target_link_libraries(makevehicle PRIVATE
     IsoRender
