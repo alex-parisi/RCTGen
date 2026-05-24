@@ -19,74 +19,63 @@
 namespace fs = std::filesystem;
 using namespace RCTGen;
 
-namespace
-{
+namespace {
     enum class Mode { Export, SkipRender, Test };
 
-    struct CliArgs
-    {
-        Mode             mode;
-        fs::path         input_file;
+    struct CliArgs {
+        Mode mode;
+        fs::path input_file;
     };
 
-    std::expected<CliArgs, std::string> parse_cli(std::span<char* const> argv)
-    {
-        if (argv.size() == 3)
-        {
+    std::expected<CliArgs, std::string> parse_cli(std::span<char * const> argv) {
+        if (argv.size() == 3) {
             const std::string_view flag = argv[1];
             Mode mode;
-            if      (flag == "--test")        mode = Mode::Test;
+            if (flag == "--test") mode = Mode::Test;
             else if (flag == "--skip-render") mode = Mode::SkipRender;
             else return std::unexpected(std::format("Unrecognized option {}", flag));
             return CliArgs{mode, argv[2]};
         }
-        if (argv.size() == 2)
-        {
+        if (argv.size() == 2) {
             return CliArgs{Mode::Export, argv[1]};
         }
         return std::unexpected(std::string("Usage: makevehicle [--test|--skip-render] <file>"));
     }
 
     // The hand-tuned default lighting rig matches the historical setup.
-    std::vector<light_t> default_lights()
-    {
+    std::vector<light_t> default_lights() {
         return {
-            {LIGHT_DIFFUSE,  0, vector3_normalize(vector3(0.0f, -1.0f,  0.0f)),  0.1f},
-            {LIGHT_DIFFUSE,  0, vector3_normalize(vector3(0.0f,  0.5f, -1.0f)),  0.8f},
-            {LIGHT_SPECULAR, 1, vector3_normalize(vector3(1.0f,  1.65f,-1.0f)),  0.5f},
-            {LIGHT_DIFFUSE,  1, vector3_normalize(vector3(1.0f,  1.7f, -1.0f)),  0.8f},
-            {LIGHT_DIFFUSE,  0, vector3(0.0f, 1.0f, 0.0f),                       0.45f},
-            {LIGHT_DIFFUSE,  0, vector3_normalize(vector3(-1.0f, 0.85f, 1.0f)),  0.475f},
-            {LIGHT_DIFFUSE,  0, vector3_normalize(vector3(0.75f, 0.4f, -1.0f)),  0.6f},
-            {LIGHT_DIFFUSE,  0, vector3_normalize(vector3(1.0f,  0.25f, 0.0f)),  0.5f},
-            {LIGHT_DIFFUSE,  0, vector3_normalize(vector3(-1.0f,-0.5f,  0.0f)),  0.1f},
+            {LIGHT_DIFFUSE, 0, vector3_normalize(vector3(0.0f, -1.0f, 0.0f)), 0.1f},
+            {LIGHT_DIFFUSE, 0, vector3_normalize(vector3(0.0f, 0.5f, -1.0f)), 0.8f},
+            {LIGHT_SPECULAR, 1, vector3_normalize(vector3(1.0f, 1.65f, -1.0f)), 0.5f},
+            {LIGHT_DIFFUSE, 1, vector3_normalize(vector3(1.0f, 1.7f, -1.0f)), 0.8f},
+            {LIGHT_DIFFUSE, 0, vector3(0.0f, 1.0f, 0.0f), 0.45f},
+            {LIGHT_DIFFUSE, 0, vector3_normalize(vector3(-1.0f, 0.85f, 1.0f)), 0.475f},
+            {LIGHT_DIFFUSE, 0, vector3_normalize(vector3(0.75f, 0.4f, -1.0f)), 0.6f},
+            {LIGHT_DIFFUSE, 0, vector3_normalize(vector3(1.0f, 0.25f, 0.0f)), 0.5f},
+            {LIGHT_DIFFUSE, 0, vector3_normalize(vector3(-1.0f, -0.5f, 0.0f)), 0.1f},
         };
     }
 }
 
-int main(int argc, char** argv)
-{
-    auto cli = parse_cli(std::span<char* const>(argv, static_cast<std::size_t>(argc)));
-    if (!cli)
-    {
+int main(int argc, char **argv) {
+    auto cli = parse_cli(std::span<char * const>(argv, static_cast<std::size_t>(argc)));
+    if (!cli) {
         printMsg("Error: {}", cli.error());
         return 1;
     }
 
     auto project_json = loadFile(cli->input_file);
-    if (!project_json)
-    {
+    if (!project_json) {
         printMsg("Error: {}", project_json.error());
         return 1;
     }
-    json_t* root = project_json->get();
+    json_t *root = project_json->get();
 
     fs::path output_directory = ".";
-    if (json_t* od = json_object_get(root, "output_directory"))
-    {
+    if (json_t *od = json_object_get(root, "output_directory")) {
         auto od_str = readString(od, "output_directory");
-        if (!od_str)
-        {
+        if (!od_str) {
             printMsg("Error: {}", od_str.error());
             return 1;
         }
@@ -94,11 +83,9 @@ int main(int argc, char** argv)
     }
 
     std::vector<light_t> lights = default_lights();
-    if (json_t* lights_json = json_object_get(root, "lights"))
-    {
+    if (json_t *lights_json = json_object_get(root, "lights")) {
         auto loaded = loadLights(lights_json);
-        if (!loaded)
-        {
+        if (!loaded) {
             printMsg("Error: {}", loaded.error());
             return 1;
         }
@@ -106,8 +93,7 @@ int main(int argc, char** argv)
     }
 
     Project project;
-    if (auto r = loadProject(project, root); !r)
-    {
+    if (auto r = loadProject(project, root); !r) {
         printMsg("Error: {}", r.error());
         return 1;
     }
@@ -121,16 +107,19 @@ int main(int argc, char** argv)
         (cli->mode == Mode::Test) ? 0.125f * kTileSize : kTileSize);
 
     int exit_code = 0;
-    if (cli->mode == Mode::Test)
-    {
+    if (cli->mode == Mode::Test) {
         auto r = exportProjectTest(project, context);
-        if (!r) { printMsg("Error: {}", r.error()); exit_code = 1; }
-    }
-    else
-    {
+        if (!r) {
+            printMsg("Error: {}", r.error());
+            exit_code = 1;
+        }
+    } else {
         auto r = exportProject(
             project, context, output_directory, cli->mode == Mode::SkipRender);
-        if (!r) { printMsg("Error: {}", r.error()); exit_code = 1; }
+        if (!r) {
+            printMsg("Error: {}", r.error());
+            exit_code = 1;
+        }
     }
 
     context_destroy(&context);

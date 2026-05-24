@@ -6,8 +6,7 @@
 #include "../iso-render/renderer.h"
 #include "Constants.hpp"
 
-namespace RCTGen
-{
+namespace RCTGen {
     // Number of sprite images emitted for the given sprite-flag set, plus
     // restraint-animation contribution from the vehicle flag set.
     [[nodiscard]] int countSprites(SpriteFlag spriteFlags, VehicleFlag vehicleFlags);
@@ -15,8 +14,8 @@ namespace RCTGen
     // Render a vehicle (one frame: 0 for static, >0 for restraint animation
     // frames). Writes images into `out`. Returns the number of images written.
     int renderVehicleFrame(
-        context_t* context,
+        context_t *context,
         SpriteFlag spriteFlags,
         int frame,
-        image_t* out);
+        image_t *out);
 }

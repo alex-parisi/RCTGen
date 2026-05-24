@@ -8,114 +8,102 @@
 #include <type_traits>
 #include <utility>
 
-namespace RCTGen
-{
+namespace RCTGen {
     inline constexpr float kTileSize = 3.3f;
 
-    enum class SpriteFlag : std::uint32_t
-    {
-        flatSlope                   = 1u <<  0,
-        gentleSlope                 = 1u <<  1,
-        steepSlope                  = 1u <<  2,
-        verticalSlope               = 1u <<  3,
-        diagonalSlope               = 1u <<  4,
-        banking                     = 1u <<  5,
-        inlineTwist                 = 1u <<  6,
-        slopeBankTransition         = 1u <<  7,
-        diagonalBankTransition      = 1u <<  8,
-        slopedBankTransition        = 1u <<  9,
-        slopedBankedTurn            = 1u << 10,
-        bankedSlopeTransition       = 1u << 11,
-        corkscrew                   = 1u << 12,
-        zeroGRoll                   = 1u << 13,
-        diagonalSlopedBankTransition= 1u << 14,
-        diveLoop                    = 1u << 15,
+    enum class SpriteFlag : std::uint32_t {
+        flatSlope = 1u << 0,
+        gentleSlope = 1u << 1,
+        steepSlope = 1u << 2,
+        verticalSlope = 1u << 3,
+        diagonalSlope = 1u << 4,
+        banking = 1u << 5,
+        inlineTwist = 1u << 6,
+        slopeBankTransition = 1u << 7,
+        diagonalBankTransition = 1u << 8,
+        slopedBankTransition = 1u << 9,
+        slopedBankedTurn = 1u << 10,
+        bankedSlopeTransition = 1u << 11,
+        corkscrew = 1u << 12,
+        zeroGRoll = 1u << 13,
+        diagonalSlopedBankTransition = 1u << 14,
+        diveLoop = 1u << 15,
     };
 
-    enum class RideFlag : std::uint32_t
-    {
+    enum class RideFlag : std::uint32_t {
         noCollisionCrashes = 1u << 0,
         riderControlsSpeed = 1u << 1,
     };
 
-    enum class VehicleFlag : std::uint32_t
-    {
-        secondaryRemap     = 1u << 0,
-        tertiaryRemap      = 1u << 1,
-        ridersScream       = 1u << 2,
+    enum class VehicleFlag : std::uint32_t {
+        secondaryRemap = 1u << 0,
+        tertiaryRemap = 1u << 1,
+        ridersScream = 1u << 2,
         restraintAnimation = 1u << 3,
     };
 
-    enum class RunningSound : std::uint8_t
-    {
-        woodenOld    =   1,
-        woodenModern =  54,
-        steel        =   2,
-        steelSmooth  =  57,
-        waterslide   =  32,
-        train        =  31,
-        engine       =  21,
-        none         = 255,
+    enum class RunningSound : std::uint8_t {
+        woodenOld = 1,
+        woodenModern = 54,
+        steel = 2,
+        steelSmooth = 57,
+        waterslide = 32,
+        train = 31,
+        engine = 21,
+        none = 255,
     };
 
-    enum class SecondarySound : std::uint8_t
-    {
+    enum class SecondarySound : std::uint8_t {
         screams1 = 0,
         screams2 = 1,
         screams3 = 2,
-        whistle  = 3,
-        bell     = 4,
-        none     = 255,
+        whistle = 3,
+        bell = 4,
+        none = 255,
     };
 
-    enum class CarIndex : std::uint8_t
-    {
+    enum class CarIndex : std::uint8_t {
         defaultVal = 0,
-        front   = 1,
-        second  = 2,
-        rear    = 3,
-        third   = 4,
+        front = 1,
+        second = 2,
+        rear = 3,
+        third = 4,
     };
 
-    enum class Category : std::uint8_t
-    {
+    enum class Category : std::uint8_t {
         transportRide = 0,
-        gentleRide    = 1,
+        gentleRide = 1,
         rollercoaster = 2,
-        thrillRide    = 3,
-        waterRide     = 4,
-        shop          = 5,
+        thrillRide = 3,
+        waterRide = 4,
+        shop = 5,
     };
 
-    template <class E>
+    template<class E>
     concept FlagEnum =
-        std::is_same_v<E, SpriteFlag> ||
-        std::is_same_v<E, RideFlag>   ||
-        std::is_same_v<E, VehicleFlag>;
+            std::is_same_v<E, SpriteFlag> ||
+            std::is_same_v<E, RideFlag> ||
+            std::is_same_v<E, VehicleFlag>;
 
-    template <FlagEnum E>
-    constexpr E operator|(E a, E b) noexcept
-    {
+    template<FlagEnum E>
+    constexpr E operator|(E a, E b) noexcept {
         using U = std::underlying_type_t<E>;
         return static_cast<E>(static_cast<U>(a) | static_cast<U>(b));
     }
 
-    template <FlagEnum E>
-    constexpr E operator&(E a, E b) noexcept
-    {
+    template<FlagEnum E>
+    constexpr E operator&(E a, E b) noexcept {
         using U = std::underlying_type_t<E>;
         return static_cast<E>(static_cast<U>(a) & static_cast<U>(b));
     }
 
-    template <FlagEnum E>
-    constexpr E& operator|=(E& a, E b) noexcept
-    {
+    template<FlagEnum E>
+    constexpr E &operator|=(E &a, E b) noexcept {
         return a = a | b;
     }
 
-    template <FlagEnum E>
-    constexpr bool has_flag(E set, E flag) noexcept
-    {
+    template<FlagEnum E>
+    constexpr bool has_flag(E set, E flag) noexcept {
         using U = std::underlying_type_t<E>;
         return (static_cast<U>(set) & static_cast<U>(flag)) != 0;
     }

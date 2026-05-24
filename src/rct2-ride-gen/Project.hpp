@@ -11,8 +11,7 @@
 #include "model.h"
 #include "Vehicle.hpp"
 
-struct Project
-{
+struct Project {
     std::string id;
     std::string original_id;
     std::string name;
@@ -24,21 +23,21 @@ struct Project
 
     std::array<std::uint8_t, 5> configuration{};
 
-    std::uint32_t flags               = 0;
-    std::uint32_t zero_cars           = 0;
-    std::uint32_t min_cars_per_train  = 0;
-    std::uint32_t max_cars_per_train  = 0;
-    std::uint32_t category            = 0;
+    std::uint32_t flags = 0;
+    std::uint32_t zero_cars = 0;
+    std::uint32_t min_cars_per_train = 0;
+    std::uint32_t max_cars_per_train = 0;
+    std::uint32_t category = 0;
     std::uint32_t build_menu_priority = 0;
-    std::uint32_t tab_car             = 0;
-    std::uint32_t running_sound       = 0;
-    std::uint32_t secondary_sound     = 0;
-    std::uint32_t sprite_flags        = 0;
-    std::uint32_t num_sprites         = 0;
+    std::uint32_t tab_car = 0;
+    std::uint32_t running_sound = 0;
+    std::uint32_t secondary_sound = 0;
+    std::uint32_t sprite_flags = 0;
+    std::uint32_t num_sprites = 0;
 
-    std::vector<std::array<std::uint8_t, 3>> colors;
-    std::vector<mesh_t>                      meshes;
-    std::vector<Vehicle>                     vehicles;
+    std::vector<std::array<std::uint8_t, 3> > colors;
+    std::vector<mesh_t> meshes;
+    std::vector<Vehicle> vehicles;
 
     image_t preview{};
 };
