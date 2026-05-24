@@ -1,16 +1,11 @@
+/// project.h
+
 #pragma once
 
-#include <cstdint>
 #include "../iso-render/renderer.h"
+#include "Project.hpp"
 
 inline constexpr float TILE_SIZE = 3.3f;
-
-inline constexpr int PROJECT_MAX_MESHES           = 16;
-inline constexpr int PROJECT_MAX_MESHES_PER_MODEL = 8;
-inline constexpr int PROJECT_MAX_FRAMES           = 4;
-inline constexpr int PROJECT_MAX_VEHICLES         = 4;
-inline constexpr int PROJECT_MAX_RIDERS           = 16;
-inline constexpr int PROJECT_MAX_COLORS           = 8;
 
 // Sprite flags
 inline constexpr std::uint32_t SPRITE_FLAT_SLOPE                       = 0x0001;
@@ -73,62 +68,10 @@ inline constexpr std::uint32_t CATEGORY_THRILL_RIDE    = 3;
 inline constexpr std::uint32_t CATEGORY_WATER_RIDE     = 4;
 inline constexpr std::uint32_t CATEGORY_SHOP           = 5;
 
-struct model_t
-{
-    std::int32_t num_meshes;
-    std::int32_t mesh_index[PROJECT_MAX_MESHES_PER_MODEL][PROJECT_MAX_FRAMES];
-    vector3_t position[PROJECT_MAX_MESHES_PER_MODEL][PROJECT_MAX_FRAMES];
-    vector3_t orientation[PROJECT_MAX_MESHES_PER_MODEL][PROJECT_MAX_FRAMES];
-};
-
-struct vehicle_t
-{
-    model_t model;
-    std::uint32_t flags;
-    std::uint32_t mass;
-    std::uint32_t num_sprites;
-    std::uint32_t draw_order;
-    std::uint32_t num_riders;
-    std::uint32_t num_rider_models;
-    float spacing;
-    model_t riders[PROJECT_MAX_RIDERS];
-};
-
-struct project_t
-{
-    std::uint8_t* id;
-    std::uint8_t* original_id;
-    std::uint8_t* name;
-    std::uint8_t* description;
-    std::uint8_t* capacity;
-    std::uint8_t* author;
-    std::uint8_t* version;
-    std::uint8_t* ride_type;
-    std::uint8_t configuration[5];
-    std::uint32_t flags;
-    std::uint32_t zero_cars;
-    std::uint32_t min_cars_per_train;
-    std::uint32_t max_cars_per_train;
-    std::uint32_t category;
-    std::uint32_t build_menu_priority;
-    std::uint32_t tab_car;
-    std::uint32_t running_sound;
-    std::uint32_t secondary_sound;
-    std::uint32_t colors[PROJECT_MAX_COLORS][3];
-    std::uint32_t num_colors;
-    std::uint32_t sprite_flags;
-    std::uint32_t num_sprites;
-    std::uint32_t num_vehicles;
-    std::uint32_t num_meshes;
-    mesh_t meshes[PROJECT_MAX_MESHES];
-    vehicle_t vehicles[PROJECT_MAX_VEHICLES];
-    image_t preview;
-};
-
 int count_animation_frames(std::uint16_t sprites);
 int count_sprites_from_flags(std::uint16_t sprites, int flags);
-int project_export(project_t* project, context_t* context, const char* output_directory, int skip_render);
-int project_export_test(project_t* project, context_t* context);
+int project_export(Project* project, context_t* context, const char* output_directory, int skip_render);
+int project_export_test(Project* project, context_t* context);
 
 inline constexpr int NUM_SPRITE_GROUPS    = 16;
 inline constexpr int NUM_FLAGS            = 2;

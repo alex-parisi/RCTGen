@@ -85,7 +85,7 @@ json_t* load_optional_array(json_t* json)
     }
 }
 
-int load_model(model_t* model, json_t* json, int num_meshes, int num_frames)
+int load_model(Model* model, json_t* json, int num_meshes, int num_frames)
 {
     if (!json)
     {
@@ -94,11 +94,12 @@ int load_model(model_t* model, json_t* json, int num_meshes, int num_frames)
     }
 
     json_t* arr = load_optional_array(json);
-    model->num_meshes = json_array_size(arr);
-    for (int i = 0; i < model->num_meshes; i++)
+    model->meshes.resize(json_array_size(arr));
+    for (std::size_t i = 0; i < model->meshes.size(); i++)
     {
+        auto& mesh_frames = model->meshes[i];
         json_t* elem = json_array_get(arr, i);
-        if (model == nullptr || !json_is_object(elem))
+        if (!json_is_object(elem))
         {
             print_msg("Property \"model\" is not an object");
             return 1;
@@ -114,11 +115,11 @@ int load_model(model_t* model, json_t* json, int num_meshes, int num_frames)
         json_t* mesh_arr = load_optional_array(mesh);
         if (mesh_arr == nullptr || (json_array_size(mesh_arr) != 1 && json_array_size(mesh_arr) != num_frames))
         {
-            print_msg("Error: Number of elements in \"mesh_index\" (%d) does not match number of frames (%d)", json_array_size(mesh_arr), num_frames);
+            print_msg("Error: Number of elements in \"mesh_index\" (%zu) does not match number of frames (%d)", json_array_size(mesh_arr), num_frames);
             return 1;
         }
 
-        for (int j = 0; j < json_array_size(mesh_arr); j++)
+        for (int j = 0; j < (int)json_array_size(mesh_arr); j++)
         {
             json_t* mesh_index = json_array_get(mesh_arr, j);
             if (!json_is_integer(mesh_index))
@@ -126,16 +127,16 @@ int load_model(model_t* model, json_t* json, int num_meshes, int num_frames)
                 print_msg("Error: Property \"mesh_index\" is not an integer");
                 return 1;
             }
-            model->mesh_index[i][j] = json_integer_value(mesh_index);
-            if (model->mesh_index[i][j] >= num_meshes || model->mesh_index[i][j] < -1)
+            mesh_frames[j].mesh_index = json_integer_value(mesh_index);
+            if (mesh_frames[j].mesh_index >= num_meshes || mesh_frames[j].mesh_index < -1)
             {
-                print_msg("Mesh index %d is out of bounds", model->mesh_index[i][j]);
+                print_msg("Mesh index %d is out of bounds", mesh_frames[j].mesh_index);
                 return 1;
             }
         }
-        if (json_array_size(mesh_arr) < num_frames)
+        if ((int)json_array_size(mesh_arr) < num_frames)
         {
-            for (int j = 0; j < num_frames; j++)model->mesh_index[i][j] = model->mesh_index[i][0];
+            for (int j = 0; j < num_frames; j++) mesh_frames[j].mesh_index = mesh_frames[0].mesh_index;
         }
         json_decref(mesh_arr);
 
@@ -151,18 +152,18 @@ int load_model(model_t* model, json_t* json, int num_meshes, int num_frames)
         {
             vector3_t vec;
             if (load_vector(&vec, position))return 1;
-            for (int j = 0; j < num_frames; j++)model->position[i][j] = vec;
+            for (int j = 0; j < num_frames; j++) mesh_frames[j].position = vec;
         }
-        else if (json_array_size(position) == num_frames)
+        else if ((int)json_array_size(position) == num_frames)
         {
             for (int j = 0; j < num_frames; j++)
             {
-                if (load_vector(&(model->position[i][j]), json_array_get(position, j)))return 1;
+                if (load_vector(&mesh_frames[j].position, json_array_get(position, j)))return 1;
             }
         }
         else
         {
-            print_msg("Error: Number of elements in \"position\" (%d) does not match number of frames (%d)", json_array_size(position), num_frames);
+            print_msg("Error: Number of elements in \"position\" (%zu) does not match number of frames (%d)", json_array_size(position), num_frames);
             return 1;
         }
         //Load orientation
@@ -177,18 +178,18 @@ int load_model(model_t* model, json_t* json, int num_meshes, int num_frames)
         {
             vector3_t vec;
             if (load_vector(&vec, orientation))return 1;
-            for (int j = 0; j < num_frames; j++)model->orientation[i][j] = vec;
+            for (int j = 0; j < num_frames; j++) mesh_frames[j].orientation = vec;
         }
-        else if (json_array_size(orientation) == num_frames)
+        else if ((int)json_array_size(orientation) == num_frames)
         {
             for (int j = 0; j < num_frames; j++)
             {
-                if (load_vector(&(model->orientation[i][j]), json_array_get(orientation, j)))return 1;
+                if (load_vector(&mesh_frames[j].orientation, json_array_get(orientation, j)))return 1;
             }
         }
         else
         {
-            print_msg("Error: Number of elements in \"orientation\" (%d) does not match number of frames (%d)", json_array_size(orientation), num_frames);
+            print_msg("Error: Number of elements in \"orientation\" (%zu) does not match number of frames (%d)", json_array_size(orientation), num_frames);
             return 1;
         }
     }
@@ -297,7 +298,7 @@ int load_int(uint32_t* out, json_t* json, const char* property)
     return 0;
 }
 
-int load_colors(project_t* project, json_t* json)
+int load_colors(Project* project, json_t* json)
 {
 
     if (json == nullptr || !json_is_array(json))
@@ -306,8 +307,8 @@ int load_colors(project_t* project, json_t* json)
         return 1;
     }
 
-    project->num_colors = json_array_size(json);
-    for (int i = 0; i < project->num_colors; i++)
+    project->colors.assign(json_array_size(json), {});
+    for (std::size_t i = 0; i < project->colors.size(); i++)
     {
         json_t* colors = json_array_get(json, i);
 
@@ -318,7 +319,7 @@ int load_colors(project_t* project, json_t* json)
         }
 
         //TODO validate that correct number of colors has been supplied
-        for (int j = 0; j < json_array_size(colors) && j < 3; j++)
+        for (std::size_t j = 0; j < json_array_size(colors) && j < 3; j++)
         {
             uint32_t color;
             if (load_enum(&color, json_array_get(colors, j), color_names, NUM_COLORS, "default_colors", "color"))return 1;
@@ -387,7 +388,7 @@ int load_lights(light_t* lights, int* lights_count, json_t* json)
     return 0;
 }
 
-int load_project(project_t* project, json_t* json)
+int load_project(Project* project, json_t* json)
 {
     json_t* id = json_object_get(json, "id");
     if (id == nullptr || !json_is_string(id))
@@ -395,7 +396,7 @@ int load_project(project_t* project, json_t* json)
         print_msg("Error: No property \"id\" found");
         return 1;
     }
-    project->id = (uint8_t*)strdup(json_string_value(id));
+    project->id = json_string_value(id);
 
 
     json_t* original_id = json_object_get(json, "original_id");
@@ -407,9 +408,8 @@ int load_project(project_t* project, json_t* json)
     if (original_id != nullptr)
     {
         printf("Original ID %s\n", json_string_value(original_id));
-        project->original_id = (uint8_t*)strdup(json_string_value(original_id));
+        project->original_id = json_string_value(original_id);
     }
-    else project->original_id = nullptr;
 
     json_t* name = json_object_get(json, "name");
     if (name == nullptr || !json_is_string(name))
@@ -417,7 +417,7 @@ int load_project(project_t* project, json_t* json)
         print_msg("Error: No property \"name\" found");
         return 1;
     }
-    project->name = (uint8_t*)strdup(json_string_value(name));
+    project->name = json_string_value(name);
 
     json_t* description = json_object_get(json, "description");
     if (description == nullptr || !json_is_string(description))
@@ -425,7 +425,7 @@ int load_project(project_t* project, json_t* json)
         print_msg("Error: No property \"description\" found");
         return 1;
     }
-    project->description = (uint8_t*)strdup(json_string_value(description));
+    project->description = json_string_value(description);
 
     json_t* capacity = json_object_get(json, "capacity");
     if (capacity == nullptr || !json_is_string(capacity))
@@ -433,9 +433,8 @@ int load_project(project_t* project, json_t* json)
         print_msg("Error: No property \"capacity\" found");
         return 1;
     }
-    project->capacity = (uint8_t*)strdup(json_string_value(capacity));
+    project->capacity = json_string_value(capacity);
 
-    project->author = nullptr;
     json_t* author_json = json_object_get(json, "author");
     if (author_json != nullptr)
     {
@@ -444,10 +443,9 @@ int load_project(project_t* project, json_t* json)
             print_msg("Error: Property \"author\" is not a string");
             return 1;
         }
-        else project->author = (uint8_t*)strdup(json_string_value(author_json));
+        project->author = json_string_value(author_json);
     }
 
-    project->version = (uint8_t*)"1.0";
     json_t* version_json = json_object_get(json, "version");
     if (version_json != nullptr)
     {
@@ -456,7 +454,7 @@ int load_project(project_t* project, json_t* json)
             print_msg("Error: Property \"version\" is not a string");
             return 1;
         }
-        else project->version = (uint8_t*)strdup(json_string_value(version_json));
+        project->version = json_string_value(version_json);
     }
 
 
@@ -484,7 +482,7 @@ int load_project(project_t* project, json_t* json)
 
     //TODO check if track type is valid
     json_t* ride_type = json_object_get(json, "ride_type");
-    if (ride_type != nullptr && json_is_string(ride_type))project->ride_type = (uint8_t*)strdup(json_string_value(ride_type));
+    if (ride_type != nullptr && json_is_string(ride_type))project->ride_type = json_string_value(ride_type);
     else
     {
         print_msg("Error: Property \"ride_type\" not found or is not a string");
@@ -510,21 +508,21 @@ int load_project(project_t* project, json_t* json)
     if (load_enum(&(project->secondary_sound), json_object_get(json, "secondary_sound"), secondary_sounds, NUM_RUNNING_SOUNDS, "secondary_sound", "running sound"))return 1;
     if (load_int(&(project->min_cars_per_train), json_object_get(json, "min_cars_per_train"), "min_cars_per_train"))return 1;
     if (load_int(&(project->max_cars_per_train), json_object_get(json, "max_cars_per_train"), "max_cars_per_train"))return 1;
-    if (load_configuration(project->configuration, json_object_get(json, "configuration")))return 1;
+    if (load_configuration(project->configuration.data(), json_object_get(json, "configuration")))return 1;
 
     if (load_colors(project, json_object_get(json, "default_colors")))return 1;
 
     //Load meshes
     json_t* meshes = json_object_get(json, "meshes");
     if (meshes == nullptr)print_msg("Error: Property \"meshes\" does not exist or is not an array");
-    project->num_meshes = json_array_size(meshes);
-    for (int i = 0; i < project->num_meshes; i++)
+    project->meshes.resize(json_array_size(meshes));
+    for (std::size_t i = 0; i < project->meshes.size(); i++)
     {
         json_t* mesh = json_array_get(meshes, i);
         assert(mesh != nullptr);
-        if (load_mesh(project->meshes + i, mesh))
+        if (load_mesh(&project->meshes[i], mesh))
         {
-            for (int j = 0; j < i; j++)mesh_destroy(project->meshes + i);
+            for (std::size_t j = 0; j < i; j++)mesh_destroy(&project->meshes[j]);
             return 1;
         }
     }
@@ -534,10 +532,11 @@ int load_project(project_t* project, json_t* json)
     json_t* vehicles = json_object_get(json, "vehicles");
     if (vehicles == nullptr || !json_is_array(vehicles))print_msg("Error: Property \"vehicles\" does not exist or is not an array");
     project->num_sprites = 3;
-    project->num_vehicles = json_array_size(vehicles);
+    project->vehicles.resize(json_array_size(vehicles));
 
-    for (int i = 0; i < project->num_vehicles; i++)
+    for (std::size_t i = 0; i < project->vehicles.size(); i++)
     {
+        Vehicle& v = project->vehicles[i];
         json_t* vehicle = json_array_get(vehicles, i);
         assert(vehicle != nullptr);
         if (!json_is_object(vehicle))
@@ -547,21 +546,21 @@ int load_project(project_t* project, json_t* json)
         }
 
         json_t* spacing = json_object_get(vehicle, "spacing");
-        if (spacing != nullptr && json_is_number(spacing))project->vehicles[i].spacing = json_number_value(spacing);
+        if (spacing != nullptr && json_is_number(spacing))v.spacing = json_number_value(spacing);
         else
         {
             print_msg("Error: Property \"spacing\" not found or is not a number");
             return 1;
         }
 
-        if (load_int(&(project->vehicles[i].mass), json_object_get(vehicle, "mass"), "mass"))return 1;
-        if (load_int(&(project->vehicles[i].draw_order), json_object_get(vehicle, "draw_order"), "draw_order"))return 1;
-        if (load_flags(&(project->vehicles[i].flags), json_object_get(vehicle, "flags"), vehicle_flag_names, NUM_VEHICLE_FLAGS, "flags", "flag"))return 1;
+        if (load_int(&v.mass, json_object_get(vehicle, "mass"), "mass"))return 1;
+        if (load_int(&v.draw_order, json_object_get(vehicle, "draw_order"), "draw_order"))return 1;
+        if (load_flags(&v.flags, json_object_get(vehicle, "flags"), vehicle_flag_names, NUM_VEHICLE_FLAGS, "flags", "flag"))return 1;
 
-        int num_frames = project->vehicles[i].flags & VEHICLE_RESTRAINT_ANIMATION ? 4 : 1;
+        int num_frames = v.flags & VEHICLE_RESTRAINT_ANIMATION ? 4 : 1;
 
         //Load car model
-        if (load_model(&(project->vehicles[i].model), json_object_get(vehicle, "model"), project->num_meshes, num_frames))return 1;
+        if (load_model(&v.model, json_object_get(vehicle, "model"), (int)project->meshes.size(), num_frames))return 1;
 
         //Load rider models
         json_t* riders = json_object_get(vehicle, "riders");
@@ -573,30 +572,22 @@ int load_project(project_t* project, json_t* json)
                 print_msg("Error: Property \"capacity\" not found or is not an integer");
                 return 1;
             }
-            project->vehicles[i].num_riders = json_integer_value(num_riders);
+            v.num_riders = json_integer_value(num_riders);
 
-
-            project->vehicles[i].num_rider_models = json_array_size(riders);
-            for (int j = 0; j < project->vehicles[i].num_rider_models; j++)
+            v.riders.resize(json_array_size(riders));
+            for (std::size_t j = 0; j < v.riders.size(); j++)
             {
-                if (load_model(project->vehicles[i].riders + j, json_array_get(riders, j), project->num_meshes, num_frames))return 1;
-
+                if (load_model(&v.riders[j], json_array_get(riders, j), (int)project->meshes.size(), num_frames))return 1;
             }
-
         }
         else if (riders != nullptr && !json_is_array(riders))
         {
             print_msg("Error: Property \"riders\" is not an array");
             return 1;
         }
-        else
-        {
-            project->vehicles[i].num_riders = 0;
-            project->vehicles[i].num_rider_models = 0;
-        }
 
-        project->vehicles[i].num_sprites = count_sprites_from_flags(project->sprite_flags, project->vehicles[i].flags);
-        project->num_sprites += project->vehicles[i].num_sprites;
+        v.num_sprites = count_sprites_from_flags(project->sprite_flags, v.flags);
+        project->num_sprites += v.num_sprites;
     }
 
     project->category = 3;
@@ -605,7 +596,7 @@ int load_project(project_t* project, json_t* json)
 
 int main(int argc, char** argv)
 {
-    project_t project;
+    Project project;
 
     const char* filename = nullptr;
     int mode = 0;

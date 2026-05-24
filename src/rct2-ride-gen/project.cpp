@@ -95,7 +95,7 @@ void render_rotation(context_t* context, int num_frames, float pitch, float roll
 
 }
 
-int render_vehicle(context_t* context, project_t* project, int i, image_t* images, int frame)
+int render_vehicle(context_t* context, Project* project, int i, image_t* images, int frame)
 {
     //Currently only restraint animations are supported
     if (frame > 0)
@@ -547,17 +547,18 @@ int count_sprites_from_flags(uint16_t sprites, int flags)
 }
 
 
-void project_add_model_to_context(project_t* project, context_t* context, model_t* model, int frame, int mask)
+void project_add_model_to_context(Project* project, context_t* context, Model* model, int frame, int mask)
 {
-    for (int i = 0; i < model->num_meshes; i++)
+    for (const auto& mesh_frames : model->meshes)
     {
-        if (model->mesh_index[i][frame] == -1)continue;
-        vector3_t orientation = vector3_mult(model->orientation[i][frame], M_PI / 180.0);
-        context_add_model(context, project->meshes + model->mesh_index[i][frame], transform(matrix_mult(rotate_y(orientation.x), matrix_mult(rotate_z(orientation.y), rotate_x(orientation.z))), model->position[i][frame]), mask);
+        const auto& f = mesh_frames[frame];
+        if (f.mesh_index == -1) continue;
+        vector3_t orientation = vector3_mult(f.orientation, M_PI / 180.0);
+        context_add_model(context, &project->meshes[f.mesh_index], transform(matrix_mult(rotate_y(orientation.x), matrix_mult(rotate_z(orientation.y), rotate_x(orientation.z))), f.position), mask);
     }
 }
 
-int project_parkobj_add(project_t* project, zip_t* archive, const char* archive_path)
+int project_parkobj_add(Project* project, zip_t* archive, const char* archive_path)
 {
     char path[MAX_PATH_LENGTH];
     snprintf(path, MAX_PATH_LENGTH, "object/%s", archive_path);
@@ -587,35 +588,35 @@ int project_parkobj_add(project_t* project, zip_t* archive, const char* archive_
     return 0;
 }
 
-void project_clean_working_dir(project_t* project)
+void project_clean_working_dir(Project* project)
 {
     remove("object/object.json");
     remove("object/images/preview.png");
-    for (int i = 0; i < project->num_vehicles; i++)
+    for (std::size_t i = 0; i < project->vehicles.size(); i++)
     {
         char path[MAX_PATH_LENGTH];
-        snprintf(path, MAX_PATH_LENGTH, "images/car_%d.png", i);
+        snprintf(path, MAX_PATH_LENGTH, "images/car_%zu.png", i);
         remove(path);
     }
 }
 
-json_t* project_generate_json(project_t* project)
+json_t* project_generate_json(Project* project)
 {
 	//Create JSON file
 	json_t* json = json_object();
-	json_object_set_new(json, "id", json_string((char*)project->id));
-	if (project->original_id)json_object_set_new(json, "originalId", json_string((char*)project->original_id));
-	json_object_set_new(json, "version", json_string((char*)project->version));
+	json_object_set_new(json, "id", json_string(project->id.c_str()));
+	if (!project->original_id.empty())json_object_set_new(json, "originalId", json_string(project->original_id.c_str()));
+	json_object_set_new(json, "version", json_string(project->version.c_str()));
 	json_t* authors = json_array();
-	if (project->author != nullptr)json_array_append_new(authors, json_string((char*)project->author));
+	if (!project->author.empty())json_array_append_new(authors, json_string(project->author.c_str()));
 	json_object_set_new(json, "authors", authors);
-	
+
 	json_object_set_new(json, "objectType", json_string("ride"));
-	
+
 	//Ride header
 	json_t* properties = json_object();
 	json_t* types = json_array();
-	json_array_append_new(types, json_string((char*)project->ride_type));
+	json_array_append_new(types, json_string(project->ride_type.c_str()));
 	json_object_set_new(properties, "type", types);
 	json_object_set_new(properties, "category", json_string(category_names[project->category]));
 	json_object_set_new(properties, "minCarsPerTrain", json_integer(project->min_cars_per_train));
@@ -633,27 +634,28 @@ json_t* project_generate_json(project_t* project)
 	
 	//Color presets
 	json_t* car_color_presets = json_array();
-		for (int i = 0; i < project->num_colors; i++)
+		for (const auto& preset : project->colors)
 		{
 		json_t* car_color_preset = json_array();
-		json_array_append_new(car_color_preset, json_string(color_names[project->colors[i][0]]));
-		json_array_append_new(car_color_preset, json_string(color_names[project->colors[i][1]]));
-		json_array_append_new(car_color_preset, json_string(color_names[project->colors[i][2]]));
+		json_array_append_new(car_color_preset, json_string(color_names[preset[0]]));
+		json_array_append_new(car_color_preset, json_string(color_names[preset[1]]));
+		json_array_append_new(car_color_preset, json_string(color_names[preset[2]]));
 		json_t* arr = json_array();
 		json_array_append_new(arr, car_color_preset);//Presets are arrays of arrays for some reason?
 		json_array_append_new(car_color_presets, arr);
 		}
 	json_object_set_new(properties, "carColours", car_color_presets);
-	
+
 	json_t* cars = json_array();
-	for (int i = 0; i < project->num_vehicles; i++)
+	for (std::size_t i = 0; i < project->vehicles.size(); i++)
 	{
+		const Vehicle& vehicle = project->vehicles[i];
 		json_t* car = json_object();
 		json_object_set_new(car, "rotationFrameMask", json_integer(31));
-		json_object_set_new(car, "spacing", json_integer((project->vehicles[i].spacing * 278912) / TILE_SIZE));
-		json_object_set_new(car, "mass", json_integer(project->vehicles[i].mass));
-		json_object_set_new(car, "numSeats", json_integer(project->vehicles[i].num_riders));
-		json_object_set_new(car, "numSeatRows", json_integer(project->vehicles[i].num_rider_models));
+		json_object_set_new(car, "spacing", json_integer((vehicle.spacing * 278912) / TILE_SIZE));
+		json_object_set_new(car, "mass", json_integer(vehicle.mass));
+		json_object_set_new(car, "numSeats", json_integer(vehicle.num_riders));
+		json_object_set_new(car, "numSeatRows", json_integer(vehicle.riders.size()));
 		int friction_sound_ids[] = { RUNNING_SOUND_WOODEN_OLD,RUNNING_SOUND_WOODEN_MODERN,RUNNING_SOUND_STEEL,RUNNING_SOUND_STEEL_SMOOTH,RUNNING_SOUND_WATERSLIDE,RUNNING_SOUND_TRAIN,RUNNING_SOUND_ENGINE };
 		json_object_set_new(car, "frictionSoundId", json_integer(friction_sound_ids[project->running_sound]));
 		json_object_set_new(car, "soundRange", json_integer(project->secondary_sound));
@@ -752,14 +754,14 @@ json_t* project_generate_json(project_t* project)
 		if (project->vehicles[i].flags & VEHICLE_RESTRAINT_ANIMATION)json_object_set_new(sprite_groups, "restraintAnimation", json_integer(4));
 		json_object_set_new(car, "spriteGroups", sprite_groups);
 		
-		if (project->vehicles[i].flags & VEHICLE_SECONDARY_REMAP)json_object_set_new(car, "hasAdditionalColour1", json_true());
-		if (project->vehicles[i].flags & VEHICLE_TERTIARY_REMAP)json_object_set_new(car, "hasAdditionalColour2", json_true());
-		if (project->vehicles[i].flags & VEHICLE_RIDERS_SCREAM)json_object_set_new(car, "hasScreamingRiders", json_true());
+		if (vehicle.flags & VEHICLE_SECONDARY_REMAP)json_object_set_new(car, "hasAdditionalColour1", json_true());
+		if (vehicle.flags & VEHICLE_TERTIARY_REMAP)json_object_set_new(car, "hasAdditionalColour2", json_true());
+		if (vehicle.flags & VEHICLE_RIDERS_SCREAM)json_object_set_new(car, "hasScreamingRiders", json_true());
 		json_t* loading_positions = json_array();
-		for (int j = 0; j < project->vehicles[i].num_rider_models; j++)
+		for (const auto& rider : vehicle.riders)
 		{
-		    int position = round(32.0 * project->vehicles[i].riders[j].position[0][0].x / TILE_SIZE);
-		    if (project->vehicles[i].num_riders > 1)
+		    int position = round(32.0 * rider.meshes[0][0].position.x / TILE_SIZE);
+		    if (vehicle.num_riders > 1)
 		    {
 		        json_array_append_new(loading_positions, json_integer(position - 1));
 		        json_array_append_new(loading_positions, json_integer(position + 1));
@@ -771,24 +773,24 @@ json_t* project_generate_json(project_t* project)
 	}
 	json_object_set_new(properties, "cars", cars);
 	json_object_set_new(json, "properties", properties);
-	
+
 	//String tables
 	json_t* strings = json_object();
 	json_t* name = json_object();
-	json_object_set_new(name, "en-GB", json_string((char*)project->name));
+	json_object_set_new(name, "en-GB", json_string(project->name.c_str()));
 	json_object_set_new(strings, "name", name);
 	json_t* description = json_object();
-	json_object_set_new(description, "en-GB", json_string((char*)project->description));
+	json_object_set_new(description, "en-GB", json_string(project->description.c_str()));
 	json_object_set_new(strings, "description", description);
 	json_t* capacity = json_object();
-	json_object_set_new(capacity, "en-GB", json_string((char*)project->capacity));
+	json_object_set_new(capacity, "en-GB", json_string(project->capacity.c_str()));
 	json_object_set_new(strings, "capacity", capacity);
 	json_object_set_new(json, "strings", strings);
 	
 	return json;
 }
 
-json_t* project_render_sprites(project_t* project, context_t* context)
+json_t* project_render_sprites(Project* project, context_t* context)
 {
     json_t* images_json = json_array();
 
@@ -811,11 +813,12 @@ json_t* project_render_sprites(project_t* project, context_t* context)
         json_array_append_new(images_json, json_image("images/preview.png", 0, 0, -1, -1, -1, -1));
     }
 
-    for (int i = 0; i < project->num_vehicles; i++)
+    for (std::size_t i = 0; i < project->vehicles.size(); i++)
     {
-        int num_frames = project->vehicles[i].flags & VEHICLE_RESTRAINT_ANIMATION ? 4 : 1;
-        int num_car_images = count_sprites_from_flags(project->sprite_flags, project->vehicles[i].flags);
-        int num_images = num_car_images * (1 + project->vehicles[i].num_rider_models);
+        Vehicle& vehicle = project->vehicles[i];
+        int num_frames = vehicle.flags & VEHICLE_RESTRAINT_ANIMATION ? 4 : 1;
+        int num_car_images = count_sprites_from_flags(project->sprite_flags, vehicle.flags);
+        int num_images = num_car_images * (1 + (int)vehicle.riders.size());
         image_t* images = (image_t*)calloc(num_images, sizeof(image_t));
 
         //Render vehicle
@@ -824,22 +827,22 @@ json_t* project_render_sprites(project_t* project, context_t* context)
         for (int frame = 0; frame < num_frames; frame++)
         {
             context_begin_render(context);
-            project_add_model_to_context(project, context, &(project->vehicles[i].model), frame, 0);
+            project_add_model_to_context(project, context, &vehicle.model, frame, 0);
             context_finalize_render(context);
             base += render_vehicle(context, project, i, images + base, frame);
             context_end_render(context);
         }
 
-        for (int j = 0; j < project->vehicles[i].num_rider_models; j++)
+        for (std::size_t j = 0; j < vehicle.riders.size(); j++)
         {
-            print_msg("Rendering peep sprites %d", j);
+            print_msg("Rendering peep sprites %zu", j);
             base = 0;
             for (int frame = 0; frame < num_frames; frame++)
             {
                 context_begin_render(context);
-                project_add_model_to_context(project, context, &(project->vehicles[i].model), frame, 1);
-                for (int k = 0; k < j; k++)project_add_model_to_context(project, context, &(project->vehicles[i].riders[k]), frame, 1);
-                project_add_model_to_context(project, context, &(project->vehicles[i].riders[j]), frame, 0);
+                project_add_model_to_context(project, context, &vehicle.model, frame, 1);
+                for (std::size_t k = 0; k < j; k++)project_add_model_to_context(project, context, &vehicle.riders[k], frame, 1);
+                project_add_model_to_context(project, context, &vehicle.riders[j], frame, 0);
                 context_finalize_render(context);
                 base += render_vehicle(context, project, i, images + (j + 1) * num_car_images + base, frame);
                 context_end_render(context);
@@ -853,13 +856,13 @@ json_t* project_render_sprites(project_t* project, context_t* context)
         image_create_atlas(&atlas, images, num_images, x_coords, y_coords);
         //Write image json
         char path[MAX_PATH_LENGTH];
-        snprintf(path, MAX_PATH_LENGTH, "images/car_%d.png", i);
-        for (int i = 0; i < num_images; i++)
+        snprintf(path, MAX_PATH_LENGTH, "images/car_%zu.png", i);
+        for (int k = 0; k < num_images; k++)
         {
-            json_array_append_new(images_json, json_image(path, images[i].x_offset, images[i].y_offset, x_coords[i], y_coords[i], images[i].width, images[i].height));
+            json_array_append_new(images_json, json_image(path, images[k].x_offset, images[k].y_offset, x_coords[k], y_coords[k], images[k].width, images[k].height));
         }
-        //Write image file	
-        snprintf(path, MAX_PATH_LENGTH, "object/images/car_%d.png", i);
+        //Write image file
+        snprintf(path, MAX_PATH_LENGTH, "object/images/car_%zu.png", i);
         FILE* file = fopen(path, "wb");
         if (file)
         {
@@ -872,14 +875,14 @@ json_t* project_render_sprites(project_t* project, context_t* context)
             json_decref(images_json);
             return nullptr;
         }
-        for (int i = 0; i < num_images; i++)image_destroy(images + i);
+        for (int k = 0; k < num_images; k++)image_destroy(images + k);
         free(images);
         image_destroy(&atlas);
     }
     return images_json;
 }
 
-int project_make_parkobj(project_t* project, const char* path)
+int project_make_parkobj(Project* project, const char* path)
 {
     int error = 0;
     zip_t* archive = zip_open(path, ZIP_CREATE | ZIP_TRUNCATE, &error);
@@ -898,10 +901,10 @@ int project_make_parkobj(project_t* project, const char* path)
 
     if (project_parkobj_add(project, archive, "object.json"))return 1;
     if (project_parkobj_add(project, archive, "images/preview.png"))return 1;
-    for (int i = 0; i < project->num_vehicles; i++)
+    for (std::size_t i = 0; i < project->vehicles.size(); i++)
     {
         char path[MAX_PATH_LENGTH];
-        snprintf(path, MAX_PATH_LENGTH, "images/car_%d.png", i);
+        snprintf(path, MAX_PATH_LENGTH, "images/car_%zu.png", i);
         if (project_parkobj_add(project, archive, path))return 1;
     }
     if (zip_close(archive) < 0)
@@ -912,7 +915,7 @@ int project_make_parkobj(project_t* project, const char* path)
     return 0;
 }
 
-int project_export(project_t* project, context_t* context, const char* output_directory, int skip_render)
+int project_export(Project* project, context_t* context, const char* output_directory, int skip_render)
 {
     json_t* json = project_generate_json(project);
 
@@ -948,28 +951,27 @@ int project_export(project_t* project, context_t* context, const char* output_di
 
     //Export .parkobj file
     char path[MAX_PATH_LENGTH];
-    snprintf(path, MAX_PATH_LENGTH, "%s/%s.parkobj", output_directory, project->id);
+    snprintf(path, MAX_PATH_LENGTH, "%s/%s.parkobj", output_directory, project->id.c_str());
     if (project_make_parkobj(project, path))return 1;
     return 0;
 }
 
-int project_export_test(project_t* project, context_t* context)
+int project_export_test(Project* project, context_t* context)
 {
-    for (int i = 0; i < project->num_vehicles; i++)
+    for (std::size_t i = 0; i < project->vehicles.size(); i++)
     {
-        int num_frames = project->vehicles[i].flags & VEHICLE_RESTRAINT_ANIMATION ? 4 : 1;
+        Vehicle& vehicle = project->vehicles[i];
+        int num_frames = vehicle.flags & VEHICLE_RESTRAINT_ANIMATION ? 4 : 1;
         for (int j = 0; j < num_frames; j++)
         {
-            printf("Rendering vehicle %d frame %d\n", i, j);
-            int num_car_images = count_sprites_from_flags(project->sprite_flags, project->vehicles[i].flags);
-            int num_images = num_car_images * (1 + project->vehicles[i].num_rider_models);
+            printf("Rendering vehicle %zu frame %d\n", i, j);
             image_t image;
             //Render vehicle
             context_begin_render(context);
-            project_add_model_to_context(project, context, &(project->vehicles[i].model), j, 0);
-            for (int k = 0; k < project->vehicles[i].num_rider_models; k++)
+            project_add_model_to_context(project, context, &vehicle.model, j, 0);
+            for (std::size_t k = 0; k < vehicle.riders.size(); k++)
             {
-                project_add_model_to_context(project, context, &(project->vehicles[i].riders[k]), j, 0);
+                project_add_model_to_context(project, context, &vehicle.riders[k], j, 0);
             }
             printf("Models added\n");
             context_finalize_render(context);
@@ -980,7 +982,7 @@ int project_export_test(project_t* project, context_t* context)
             printf("Cleanup complete\n");
             //Write image file
             char path[MAX_PATH_LENGTH];
-            snprintf(path, MAX_PATH_LENGTH, "test/car_%d_%d.png", i, j);
+            snprintf(path, MAX_PATH_LENGTH, "test/car_%zu_%d.png", i, j);
             FILE* file = fopen(path, "wb");
             if (file)
             {
