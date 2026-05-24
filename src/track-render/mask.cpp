@@ -1,10 +1,8 @@
-#ifdef _MSC_VER
-#define _USE_MATH_DEFINES
-#endif
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+#include <cassert>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <png.h>
 #include <jansson.h>
 #include "track.h"
@@ -230,8 +228,8 @@ int process_mask(image_t* mask,int mirror,int split[8],int transfer[8],int split
 {
 int rect_counts[8]={0,0,0,0,0,0,0,0};
 int secondary_rect_counts[8]={0,0,0,0,0,0,0,0};
-rect_t* rects=(rect_t*)malloc(sizeof(rect_t)*(mask->width*mask->height+1)/2);
-rect_t* secondary_rects=(rect_t*)malloc(sizeof(rect_t)*(mask->width*mask->height+1)/2);
+rect_t* rects=static_cast<rect_t*>(std::malloc(sizeof(rect_t)*(mask->width*mask->height+1)/2));
+rect_t* secondary_rects=static_cast<rect_t*>(std::malloc(sizeof(rect_t)*(mask->width*mask->height+1)/2));
 
 //Find origin point and sprite count
 int offset_found=0;
@@ -265,7 +263,7 @@ int nontrivial=0;
 
 	if(!nontrivial&&!split[0]&&num_sprites==1)
 	{
-	view->masks=NULL;
+	view->masks=nullptr;
 	view->num_sprites=num_sprites;
 	view->flags=0;
 	return 0;
@@ -417,7 +415,7 @@ void print_masks(view_t views[NUM_TRACK_SECTIONS][4])
 	for(int i=0;i<NUM_TRACK_SECTIONS;i++)
 	{
 	//Find first rect for this view
-	rect_t* start_rect=NULL;
+	rect_t* start_rect=nullptr;
 		for(int j=0;j<4;j++)
 		{
 			if(views[i][j].masks)
@@ -480,14 +478,14 @@ void print_masks(view_t views[NUM_TRACK_SECTIONS][4])
 printf("view_t views[TRACK_SECTIONS][4]={\n");
 	for(int i=0;i<NUM_TRACK_SECTIONS;i++)
 	{
-	mask_t* start_mask=NULL;
+	mask_t* start_mask=nullptr;
 	putchar('\t');
 		for(int j=0;j<4;j++)
 		{
 			if(!views[i][j].masks)printf("{0,%d,NULL},",views[i][j].num_sprites);
 			else
 			{
-				if(start_mask==NULL)start_mask=views[i][j].masks;
+				if(start_mask==nullptr)start_mask=views[i][j].masks;
 			const char* flags[4]={"0","VIEW_NEEDS_TRACK_MASK"};
 			printf("{%s,%d,%s_masks+%d},",flags[views[i][j].flags],views[i][j].num_sprites,track_sections[i].name,views[i][j].masks-start_mask);
 			}
@@ -501,7 +499,7 @@ int load_masks(const char* filename,view_t views[NUM_TRACK_SECTIONS][4])
 {
 json_error_t error;
 json_t* json=json_load_file(filename,0,&error);
-	if(json==NULL)
+	if(json==nullptr)
 	{
 	printf("Error: %s at line %d column %d\n",error.text,error.line,error.column);
 	return 1;
@@ -517,8 +515,8 @@ json_t* json=json_load_file(filename,0,&error);
 int num_rects=0;
 int num_masks=0;
 mask_list_t mask_list;
-mask_list.rects=(rect_t*)calloc(MAX_RECTS,sizeof(rect_t));
-mask_list.masks=(mask_t*)calloc(MAX_MASKS,sizeof(mask_t));
+mask_list.rects=static_cast<rect_t*>(std::calloc(MAX_RECTS,sizeof(rect_t)));
+mask_list.masks=static_cast<mask_t*>(std::calloc(MAX_MASKS,sizeof(mask_t)));
 mask_list.views=views;
 memset(mask_list.views,0,NUM_TRACK_SECTIONS*4*sizeof(view_t));
 
@@ -552,7 +550,7 @@ memset(mask_list.views,0,NUM_TRACK_SECTIONS*4*sizeof(view_t));
 			return 1;
 			}
 		FILE* file=fopen(json_string_value(mask),"rb");
-			if(file ==NULL)
+			if(file ==nullptr)
 			{
 			printf("Error: could not open %s for writing\n",json_string_value(mask));
 			return 1;
@@ -784,7 +782,7 @@ int transfer=0;
 		else transfer=0;
 	}	
 	FILE* file=fopen(filename,"wb");
-	if(file ==NULL)
+	if(file ==nullptr)
 	{
 	printf("Error: could not open file for writing\n");
 	fclose(file);
@@ -799,9 +797,9 @@ void dump_masks(const char* set_name,const view_t masks[NUM_TRACK_SECTIONS][4])
 {
 //Write single tile masks TODO ideally these would be written only if they are used
 char filename[256];
-sprintf(filename,"masks/%s/single_tile.png",set_name);
+std::snprintf(filename,sizeof(filename),"masks/%s/single_tile.png",set_name);
 dump_mask(&single_tile,filename);
-sprintf(filename,"masks/%s/single_tile_diag.png",set_name);
+std::snprintf(filename,sizeof(filename),"masks/%s/single_tile_diag.png",set_name);
 dump_mask(&single_tile_diag,filename);
 		
 json_t* json=json_object();
@@ -814,9 +812,9 @@ json_t* json=json_object();
 		{
 			if(masks[i][j].num_sprites==0)break;
 		json_t* view=json_object();
-			if(masks[i][j].masks==NULL)
+			if(masks[i][j].masks==nullptr)
 			{
-			sprintf(filename,"masks/%s/single_tile.png",set_name);
+			std::snprintf(filename,sizeof(filename),"masks/%s/single_tile.png",set_name);
 			json_object_set_new(view,"mask",json_string(filename));
 			json_array_append_new(track_section,view);
 			continue;
@@ -828,13 +826,13 @@ json_t* json=json_object();
 		//Check for single tile non diagonal mask, which is frequently repeated and should not be duplicated
 			if(single_tile&&rect.x_lower==INT32_MIN&&rect.y_lower==INT32_MIN&&rect.x_upper==INT32_MAX&&rect.y_upper==INT32_MAX)
 			{
-			sprintf(filename,"masks/%s/single_tile.png",set_name);
+			std::snprintf(filename,sizeof(filename),"masks/%s/single_tile.png",set_name);
 			json_object_set_new(view,"mask",json_string(filename));
 			}
 		//Check for single tile diagonal mask
 			else if(single_tile&&rect.x_lower==-32&&rect.y_lower==INT32_MIN&&rect.x_upper==32&&rect.y_upper==INT32_MAX)
 			{
-			sprintf(filename,"masks/%s/single_tile_diag.png",set_name);
+			std::snprintf(filename,sizeof(filename),"masks/%s/single_tile_diag.png",set_name);
 			json_object_set_new(view,"mask",json_string(filename));
 			}
 		//Check for element that is mirror of other piece - masks should not be duplicated
@@ -846,19 +844,19 @@ json_t* json=json_object();
 				if(track_sections[i].flags&TRACK_DIAGONAL||track_sections[i].flags&TRACK_DIAGONAL_2)new_index=(6-j)%4;
 			//Check if track piece only has two angles
 				if(masks[i][2].num_sprites==0)new_index=new_index%2;
-			sprintf(filename,"masks/%s/%s_%d.png",set_name,track_sections[i-1].name,new_index);
+			std::snprintf(filename,sizeof(filename),"masks/%s/%s_%d.png",set_name,track_sections[i-1].name,new_index);
 			json_object_set_new(view,"mirror",json_true());
 			}
 			else
 			{
-			sprintf(filename,"masks/%s/%s_%d.png",set_name,track_sections[i].name,j);
+			std::snprintf(filename,sizeof(filename),"masks/%s/%s_%d.png",set_name,track_sections[i].name,j);
 			mask_num_sprites=dump_mask(&(masks[i][j]),filename);
 			}
 		json_object_set_new(view,"mask",json_string(filename));
 
 		//Check for split_ends
 		int split_ends=0;
-			if(masks[i][j].masks!=NULL&&masks[i][j].num_sprites>1&&masks[i][j].masks[0].track_mask_op==TRACK_MASK_INTERSECT&&masks[i][j].masks[1].track_mask_op!=TRACK_MASK_DIFFERENCE)
+			if(masks[i][j].masks!=nullptr&&masks[i][j].num_sprites>1&&masks[i][j].masks[0].track_mask_op==TRACK_MASK_INTERSECT&&masks[i][j].masks[1].track_mask_op!=TRACK_MASK_DIFFERENCE)
 			{
 			split_ends=1;
 			json_object_set_new(view,"split_ends",json_true());
@@ -919,7 +917,7 @@ json_t* json=json_object();
 		else json_decref(track_section);
 	}
 
-sprintf(filename,"masks/%s.json",set_name);
+std::snprintf(filename,sizeof(filename),"masks/%s.json",set_name);
 json_dump_file(json,filename,JSON_INDENT(4)|JSON_COMPACT);
 }
 
@@ -942,13 +940,13 @@ int compare_masks(view_t a[NUM_TRACK_SECTIONS][4],view_t b[NUM_TRACK_SECTIONS][4
 			return 0;
 			}
 
-			if((a[i][j].masks==NULL)!=(b[i][j].masks==NULL))
+			if((a[i][j].masks==nullptr)!=(b[i][j].masks==nullptr))
 			{
 			printf("masks differ for view %d\n",j);
 			return 0;
 			}
 
-			if(a[i][j].masks==NULL)continue;
+			if(a[i][j].masks==nullptr)continue;
 			for(int k=0;k<a[i][j].num_sprites;k++)
 			{
 				if(a[i][j].masks[k].track_mask_op!=b[i][j].masks[k].track_mask_op)

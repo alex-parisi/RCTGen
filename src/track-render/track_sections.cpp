@@ -1,14 +1,13 @@
-#include <stdint.h>
-#ifdef _MSC_VER
-#define _USE_MATH_DEFINES
-#endif
 #include "track.h"
 #include "sprites.h"
-#include <math.h>
-#include <stdint.h>
-#define NORM(x,y) (sqrt((x)*(x)+(y)*(y)))
 
-#define BANK_ANGLE 0.25*M_PI//(2.5/18.0)*M_PI
+#include <cmath>
+#include <cstdint>
+#include <numbers>
+
+inline float NORM(float x, float y) noexcept { return std::sqrt(x * x + y * y); }
+
+inline constexpr float BANK_ANGLE = 0.25f * std::numbers::pi_v<float>;
 
 float cubic(float a,float b,float c,float d,float x)
 {

@@ -1,13 +1,18 @@
-#include <assert.h>
-#include <cstdlib>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#ifdef _MSC_VER
 #define _USE_MATH_DEFINES
-#endif
 #include "track.h"
-#include <math.h>
+
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#ifndef M_PI_2
+#define M_PI_2 (M_PI / 2.0)
+#endif
 
 //       y
 // z     .     x
