@@ -123,12 +123,12 @@ int main(int argc, char** argv)
     int exit_code = 0;
     if (cli->mode == Mode::Test)
     {
-        auto r = export_project_test(project, context);
+        auto r = exportProjectTest(project, context);
         if (!r) { printMsg("Error: {}", r.error()); exit_code = 1; }
     }
     else
     {
-        auto r = export_project(
+        auto r = exportProject(
             project, context, output_directory, cli->mode == Mode::SkipRender);
         if (!r) { printMsg("Error: {}", r.error()); exit_code = 1; }
     }

@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <string>
 
-#include "../iso-render/renderer.h"
+#include "renderer.h"
 #include "Project.hpp"
 
 namespace RCTGen
@@ -18,15 +18,15 @@ namespace RCTGen
 
     // Render sprites + write object.json + bundle a .parkobj. If skip_render is
     // true, reuses images from a previously generated object.json instead.
-    [[nodiscard]] ExportResult<void> export_project(
+    [[nodiscard]] ExportResult<void> exportProject(
         Project& project,
         context_t& context,
-        const std::filesystem::path& output_directory,
-        bool skip_render);
+        const std::filesystem::path& outputDirectory,
+        bool skipRender);
 
     // Render each vehicle from a single test viewpoint and dump the PNGs to
     // ./test/. Used in --test mode.
-    [[nodiscard]] ExportResult<void> export_project_test(
+    [[nodiscard]] ExportResult<void> exportProjectTest(
         Project& project,
         context_t& context);
 }

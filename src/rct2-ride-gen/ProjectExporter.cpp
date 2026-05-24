@@ -15,8 +15,8 @@
 #include <jansson.h>
 #include <zip.h>
 
-#include "../iso-render/image.h"
-#include "../iso-render/model.h"
+#include "image.h"
+#include "model.h"
 #include "Constants.hpp"
 #include "Json.hpp"
 #include "Logging.hpp"
@@ -32,7 +32,7 @@ namespace RCTGen
         // friction_sound_id table, indexed by the running_sound enum from JSON.
         // Preserves the historical mapping (which does not align name-for-name
         // with the running-sound names — see Constants.hpp).
-        constexpr std::array<std::uint8_t, 7> kFrictionSoundIds = {
+        constexpr std::array kFrictionSoundIds = {
             std::to_underlying(RunningSound::woodenOld),
             std::to_underlying(RunningSound::woodenModern),
             std::to_underlying(RunningSound::steel),
@@ -42,30 +42,31 @@ namespace RCTGen
             std::to_underlying(RunningSound::engine),
         };
 
-        void add_model_to_context(
-            const Project& project, context_t& context, const Model& model, int frame, int mask)
+        void addModelToContext(
+            const Project& project, context_t& context, const Model& model, const int frame, const int mask)
         {
             for (const auto& mesh_frames : model.meshes)
             {
-                const auto& f = mesh_frames[frame];
-                if (f.mesh_index == -1) continue;
-                vector3_t orientation = vector3_mult(f.orientation, std::numbers::pi / 180.0);
+                const auto&[mesh_index, position, orientation] = mesh_frames[frame];
+                if (mesh_index == -1)
+                    continue;
+                auto [x, y, z] = vector3_mult(orientation, std::numbers::pi / 180.0);
                 context_add_model(
                     &context,
-                    const_cast<mesh_t*>(&project.meshes[f.mesh_index]),
+                    const_cast<mesh_t*>(&project.meshes[mesh_index]),
                     transform(
                         matrix_mult(
-                            rotate_y(orientation.x),
-                            matrix_mult(rotate_z(orientation.y), rotate_x(orientation.z))),
-                        f.position),
+                            rotate_y(x),
+                            matrix_mult(rotate_z(y), rotate_x(z))),
+                        position),
                     mask);
             }
         }
 
-        void emit_sprite_groups(json_t* sprite_groups, SpriteFlag sf, VehicleFlag vf)
+        void emitSpriteGroups(json_t* spriteGroups, const SpriteFlag sf, const VehicleFlag vf)
         {
-            auto set = [&](const char* key, int n) {
-                json_object_set_new(sprite_groups, key, json_integer(n));
+            auto set = [&](const char* key, const int n) {
+                json_object_set_new(spriteGroups, key, json_integer(n));
             };
 
             if (has_flag(sf, SpriteFlag::flatSlope))       set("slopeFlat", 32);
@@ -194,7 +195,7 @@ namespace RCTGen
                 json_object_set_new(car, "drawOrder",       json_integer(vehicle.draw_order));
 
                 json_t* sprite_groups = json_object();
-                emit_sprite_groups(sprite_groups,
+                emitSpriteGroups(sprite_groups,
                     static_cast<SpriteFlag>(project.sprite_flags),
                     static_cast<VehicleFlag>(vehicle.flags));
                 json_object_set_new(car, "spriteGroups", sprite_groups);
@@ -278,7 +279,7 @@ namespace RCTGen
                 for (int frame = 0; frame < num_frames; frame++)
                 {
                     context_begin_render(&context);
-                    add_model_to_context(project, context, vehicle.model, frame, 0);
+                    addModelToContext(project, context, vehicle.model, frame, 0);
                     context_finalize_render(&context);
                     base += renderVehicleFrame(&context, sf, frame, images.data() + base);
                     context_end_render(&context);
@@ -291,10 +292,10 @@ namespace RCTGen
                     for (int frame = 0; frame < num_frames; frame++)
                     {
                         context_begin_render(&context);
-                        add_model_to_context(project, context, vehicle.model, frame, 1);
+                        addModelToContext(project, context, vehicle.model, frame, 1);
                         for (std::size_t k = 0; k < j; k++)
-                            add_model_to_context(project, context, vehicle.riders[k], frame, 1);
-                        add_model_to_context(project, context, vehicle.riders[j], frame, 0);
+                            addModelToContext(project, context, vehicle.riders[k], frame, 1);
+                        addModelToContext(project, context, vehicle.riders[j], frame, 0);
                         context_finalize_render(&context);
                         base += renderVehicleFrame(
                             &context, sf, frame,
@@ -410,17 +411,17 @@ namespace RCTGen
         }
     } // namespace
 
-    ExportResult<void> export_project(
+    ExportResult<void> exportProject(
         Project& project,
         context_t& context,
-        const fs::path& output_directory,
-        bool skip_render)
+        const fs::path& outputDirectory,
+        bool skipRender)
     {
         JsonRef json = build_project_json(project);
 
         json_t* images_json = nullptr;
         JsonRef loaded_object_json;
-        if (skip_render)
+        if (skipRender)
         {
             auto loaded = loadFile("object/object.json");
             if (!loaded)
@@ -451,11 +452,11 @@ namespace RCTGen
 
         json_dump_file(json.get(), "object/object.json", JSON_INDENT(4));
 
-        const fs::path parkobj_path = output_directory / (project.id + ".parkobj");
+        const fs::path parkobj_path = outputDirectory / (project.id + ".parkobj");
         return make_parkobj(project, parkobj_path);
     }
 
-    ExportResult<void> export_project_test(Project& project, context_t& context)
+    ExportResult<void> exportProjectTest(Project& project, context_t& context)
     {
         for (std::size_t i = 0; i < project.vehicles.size(); i++)
         {
@@ -467,10 +468,10 @@ namespace RCTGen
                 printMsg("Rendering vehicle {} frame {}", i, j);
                 image_t image;
                 context_begin_render(&context);
-                add_model_to_context(project, context, vehicle.model, j, 0);
+                addModelToContext(project, context, vehicle.model, j, 0);
                 for (const Model& rider : vehicle.riders)
                 {
-                    add_model_to_context(project, context, rider, j, 0);
+                    addModelToContext(project, context, rider, j, 0);
                 }
                 context_finalize_render(&context);
                 context_render_view(&context, rotate_y(std::numbers::pi), &image);
