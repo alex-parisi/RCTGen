@@ -5,7 +5,7 @@
 #include <cassert>
 #include <format>
 
-namespace rctgen
+namespace RCTGen
 {
     JsonResult<JsonRef> load_file(const std::filesystem::path& path)
     {

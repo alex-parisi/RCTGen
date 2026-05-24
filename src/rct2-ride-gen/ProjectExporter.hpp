@@ -9,7 +9,7 @@
 #include "../iso-render/renderer.h"
 #include "Project.hpp"
 
-namespace rctgen
+namespace RCTGen
 {
     using ExportError = std::string;
 

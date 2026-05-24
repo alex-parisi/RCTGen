@@ -4,7 +4,7 @@
 
 #include <cstdio>
 
-namespace rctgen
+namespace RCTGen
 {
     void log_line(std::string_view message)
     {

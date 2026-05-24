@@ -17,7 +17,7 @@
 #include "ProjectLoader.hpp"
 
 namespace fs = std::filesystem;
-using namespace rctgen;
+using namespace RCTGen;
 
 namespace
 {

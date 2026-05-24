@@ -14,7 +14,7 @@
 
 #include "../iso-render/vectormath.h"
 
-namespace rctgen
+namespace RCTGen
 {
     using JsonError = std::string;
 

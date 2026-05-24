@@ -6,7 +6,7 @@
 #include "../iso-render/renderer.h"
 #include "Constants.hpp"
 
-namespace rctgen
+namespace RCTGen
 {
     // Number of sprite images emitted for the given sprite-flag set, plus
     // restraint-animation contribution from the vehicle flag set.

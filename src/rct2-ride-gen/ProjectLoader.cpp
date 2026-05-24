@@ -17,7 +17,7 @@
 #include "SpriteRenderer.hpp"
 #include "Vehicle.hpp"
 
-namespace rctgen
+namespace RCTGen
 {
     namespace
     {
@@ -53,13 +53,13 @@ namespace rctgen
 
             auto def = get("default");
             if (!def) return std::unexpected(def.error());
-            config[std::to_underlying(CarIndex::Default)] = static_cast<std::uint8_t>(*def);
+            config[std::to_underlying(CarIndex::defaultVal)] = static_cast<std::uint8_t>(*def);
 
             for (auto [key, idx] : std::array<std::pair<const char*, CarIndex>, 4>{{
-                {"front",  CarIndex::Front},
-                {"second", CarIndex::Second},
-                {"third",  CarIndex::Third},
-                {"rear",   CarIndex::Rear},
+                {"front",  CarIndex::front},
+                {"second", CarIndex::second},
+                {"third",  CarIndex::third},
+                {"rear",   CarIndex::rear},
             }})
             {
                 json_t* v = json_object_get(json, key);
@@ -174,7 +174,7 @@ namespace rctgen
             v.flags = *flags;
 
             const int num_frames =
-                has_flag(static_cast<VehicleFlag>(v.flags), VehicleFlag::RestraintAnimation)
+                has_flag(static_cast<VehicleFlag>(v.flags), VehicleFlag::restraintAnimation)
                     ? kRestraintFrameCount : 1;
             const int num_meshes_int = static_cast<int>(project.meshes.size());
 
@@ -433,13 +433,13 @@ namespace rctgen
         // Implied sprite flags.
         {
             auto sf = static_cast<SpriteFlag>(project.sprite_flags);
-            if (has_flag(sf, SpriteFlag::Banking))
+            if (has_flag(sf, SpriteFlag::banking))
             {
-                sf |= SpriteFlag::DiagonalBankTransition;
-                if (has_flag(sf, SpriteFlag::GentleSlope))
-                    sf |= SpriteFlag::SlopeBankTransition;
-                if (has_flag(sf, SpriteFlag::SlopedBankedTurn))
-                    sf |= SpriteFlag::SlopedBankTransition | SpriteFlag::BankedSlopeTransition;
+                sf |= SpriteFlag::diagonalBankTransition;
+                if (has_flag(sf, SpriteFlag::gentleSlope))
+                    sf |= SpriteFlag::slopeBankTransition;
+                if (has_flag(sf, SpriteFlag::slopedBankedTurn))
+                    sf |= SpriteFlag::slopedBankTransition | SpriteFlag::bankedSlopeTransition;
             }
             project.sprite_flags = std::to_underlying(sf);
         }
@@ -500,7 +500,7 @@ namespace rctgen
             project.num_sprites += v.num_sprites;
         }
 
-        project.category = std::to_underlying(Category::ThrillRide);
+        project.category = std::to_underlying(Category::thrillRide);
         return {};
     }
 }

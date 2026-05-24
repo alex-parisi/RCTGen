@@ -8,83 +8,83 @@
 #include <type_traits>
 #include <utility>
 
-namespace rctgen
+namespace RCTGen
 {
     inline constexpr float kTileSize = 3.3f;
 
     enum class SpriteFlag : std::uint32_t
     {
-        FlatSlope                   = 1u <<  0,
-        GentleSlope                 = 1u <<  1,
-        SteepSlope                  = 1u <<  2,
-        VerticalSlope               = 1u <<  3,
-        DiagonalSlope               = 1u <<  4,
-        Banking                     = 1u <<  5,
-        InlineTwist                 = 1u <<  6,
-        SlopeBankTransition         = 1u <<  7,
-        DiagonalBankTransition      = 1u <<  8,
-        SlopedBankTransition        = 1u <<  9,
-        SlopedBankedTurn            = 1u << 10,
-        BankedSlopeTransition       = 1u << 11,
-        Corkscrew                   = 1u << 12,
-        ZeroGRoll                   = 1u << 13,
-        DiagonalSlopedBankTransition= 1u << 14,
-        DiveLoop                    = 1u << 15,
+        flatSlope                   = 1u <<  0,
+        gentleSlope                 = 1u <<  1,
+        steepSlope                  = 1u <<  2,
+        verticalSlope               = 1u <<  3,
+        diagonalSlope               = 1u <<  4,
+        banking                     = 1u <<  5,
+        inlineTwist                 = 1u <<  6,
+        slopeBankTransition         = 1u <<  7,
+        diagonalBankTransition      = 1u <<  8,
+        slopedBankTransition        = 1u <<  9,
+        slopedBankedTurn            = 1u << 10,
+        bankedSlopeTransition       = 1u << 11,
+        corkscrew                   = 1u << 12,
+        zeroGRoll                   = 1u << 13,
+        diagonalSlopedBankTransition= 1u << 14,
+        diveLoop                    = 1u << 15,
     };
 
     enum class RideFlag : std::uint32_t
     {
-        NoCollisionCrashes = 1u << 0,
-        RiderControlsSpeed = 1u << 1,
+        noCollisionCrashes = 1u << 0,
+        riderControlsSpeed = 1u << 1,
     };
 
     enum class VehicleFlag : std::uint32_t
     {
-        SecondaryRemap     = 1u << 0,
-        TertiaryRemap      = 1u << 1,
-        RidersScream       = 1u << 2,
-        RestraintAnimation = 1u << 3,
+        secondaryRemap     = 1u << 0,
+        tertiaryRemap      = 1u << 1,
+        ridersScream       = 1u << 2,
+        restraintAnimation = 1u << 3,
     };
 
     enum class RunningSound : std::uint8_t
     {
-        WoodenOld    =   1,
-        WoodenModern =  54,
-        Steel        =   2,
-        SteelSmooth  =  57,
-        Waterslide   =  32,
-        Train        =  31,
-        Engine       =  21,
-        None         = 255,
+        woodenOld    =   1,
+        woodenModern =  54,
+        steel        =   2,
+        steelSmooth  =  57,
+        waterslide   =  32,
+        train        =  31,
+        engine       =  21,
+        none         = 255,
     };
 
     enum class SecondarySound : std::uint8_t
     {
-        Screams1 = 0,
-        Screams2 = 1,
-        Screams3 = 2,
-        Whistle  = 3,
-        Bell     = 4,
-        None     = 255,
+        screams1 = 0,
+        screams2 = 1,
+        screams3 = 2,
+        whistle  = 3,
+        bell     = 4,
+        none     = 255,
     };
 
     enum class CarIndex : std::uint8_t
     {
-        Default = 0,
-        Front   = 1,
-        Second  = 2,
-        Rear    = 3,
-        Third   = 4,
+        defaultVal = 0,
+        front   = 1,
+        second  = 2,
+        rear    = 3,
+        third   = 4,
     };
 
     enum class Category : std::uint8_t
     {
-        TransportRide = 0,
-        GentleRide    = 1,
-        Rollercoaster = 2,
-        ThrillRide    = 3,
-        WaterRide     = 4,
-        Shop          = 5,
+        transportRide = 0,
+        gentleRide    = 1,
+        rollercoaster = 2,
+        thrillRide    = 3,
+        waterRide     = 4,
+        shop          = 5,
     };
 
     template <class E>
@@ -145,12 +145,12 @@ namespace rctgen
     };
 
     inline constexpr std::array<std::uint8_t, 6> kRunningSoundValues = {
-        std::to_underlying(RunningSound::WoodenOld),
-        std::to_underlying(RunningSound::WoodenModern),
-        std::to_underlying(RunningSound::Steel),
-        std::to_underlying(RunningSound::SteelSmooth),
-        std::to_underlying(RunningSound::Waterslide),
-        std::to_underlying(RunningSound::Train),
+        std::to_underlying(RunningSound::woodenOld),
+        std::to_underlying(RunningSound::woodenModern),
+        std::to_underlying(RunningSound::steel),
+        std::to_underlying(RunningSound::steelSmooth),
+        std::to_underlying(RunningSound::waterslide),
+        std::to_underlying(RunningSound::train),
     };
 
     inline constexpr std::array<std::string_view, 32> kColorNames = {

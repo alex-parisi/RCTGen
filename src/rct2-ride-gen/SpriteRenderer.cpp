@@ -9,7 +9,7 @@
 
 #include "Logging.hpp"
 
-namespace rctgen
+namespace RCTGen
 {
     namespace
     {
@@ -270,23 +270,23 @@ namespace rctgen
     int count_sprites(SpriteFlag sf, VehicleFlag vf)
     {
         int n = 0;
-        if (has_flag(sf, SpriteFlag::FlatSlope))                    n +=  32;
-        if (has_flag(sf, SpriteFlag::GentleSlope))                  n +=  72;
-        if (has_flag(sf, SpriteFlag::SteepSlope))                   n +=  80;
-        if (has_flag(sf, SpriteFlag::VerticalSlope))                n += 116;
-        if (has_flag(sf, SpriteFlag::DiagonalSlope))                n +=  24;
-        if (has_flag(sf, SpriteFlag::Banking))                      n +=  80;
-        if (has_flag(sf, SpriteFlag::InlineTwist))                  n +=  40;
-        if (has_flag(sf, SpriteFlag::SlopeBankTransition))          n += 128;
-        if (has_flag(sf, SpriteFlag::DiagonalBankTransition))       n +=  16;
-        if (has_flag(sf, SpriteFlag::SlopedBankTransition))         n +=  16;
-        if (has_flag(sf, SpriteFlag::DiagonalSlopedBankTransition)) n +=  48;
-        if (has_flag(sf, SpriteFlag::SlopedBankedTurn))             n += 128;
-        if (has_flag(sf, SpriteFlag::BankedSlopeTransition))        n +=  16;
-        if (has_flag(sf, SpriteFlag::Corkscrew))                    n +=  80;
-        if (has_flag(sf, SpriteFlag::ZeroGRoll))                    n += 160;
-        if (has_flag(sf, SpriteFlag::DiveLoop))                     n += 112;
-        if (has_flag(vf, VehicleFlag::RestraintAnimation))          n +=  kRestraintFrames;
+        if (has_flag(sf, SpriteFlag::flatSlope))                    n +=  32;
+        if (has_flag(sf, SpriteFlag::gentleSlope))                  n +=  72;
+        if (has_flag(sf, SpriteFlag::steepSlope))                   n +=  80;
+        if (has_flag(sf, SpriteFlag::verticalSlope))                n += 116;
+        if (has_flag(sf, SpriteFlag::diagonalSlope))                n +=  24;
+        if (has_flag(sf, SpriteFlag::banking))                      n +=  80;
+        if (has_flag(sf, SpriteFlag::inlineTwist))                  n +=  40;
+        if (has_flag(sf, SpriteFlag::slopeBankTransition))          n += 128;
+        if (has_flag(sf, SpriteFlag::diagonalBankTransition))       n +=  16;
+        if (has_flag(sf, SpriteFlag::slopedBankTransition))         n +=  16;
+        if (has_flag(sf, SpriteFlag::diagonalSlopedBankTransition)) n +=  48;
+        if (has_flag(sf, SpriteFlag::slopedBankedTurn))             n += 128;
+        if (has_flag(sf, SpriteFlag::bankedSlopeTransition))        n +=  16;
+        if (has_flag(sf, SpriteFlag::corkscrew))                    n +=  80;
+        if (has_flag(sf, SpriteFlag::zeroGRoll))                    n += 160;
+        if (has_flag(sf, SpriteFlag::diveLoop))                     n += 112;
+        if (has_flag(vf, VehicleFlag::restraintAnimation))          n +=  kRestraintFrames;
         return n;
     }
 
@@ -310,36 +310,36 @@ namespace rctgen
             }
         };
 
-        emit_if(SpriteFlag::FlatSlope,              "Rendering flat sprites",                          kFlatSlopeRot);
-        emit_if(SpriteFlag::GentleSlope,            "Rendering gentle sprites",                        kGentleSlopeRot);
-        emit_if(SpriteFlag::SteepSlope,             "Rendering steep sprites",                         kSteepSlopeRot);
-        emit_if(SpriteFlag::VerticalSlope,          "Rendering vertical sprites",                      kVerticalSlopeRot);
-        emit_if(SpriteFlag::DiagonalSlope,          "Rendering diagonal sprites",                      kDiagonalSlopeRot);
-        emit_if(SpriteFlag::Banking,                "Rendering banked sprites",                        kBankingRot);
-        emit_if(SpriteFlag::InlineTwist,            "Rendering inline twist sprites",                  kInlineTwistRot);
-        emit_if(SpriteFlag::SlopeBankTransition,    "Rendering slope-bank transition sprites",         kSlopeBankTransitionRot);
-        emit_if(SpriteFlag::DiagonalBankTransition, "Rendering diagonal slope-bank transition sprites",kDiagonalBankTransitionRot);
-        emit_if(SpriteFlag::SlopedBankTransition,   "Rendering sloped bank transition sprites",        kSlopedBankTransitionRot);
-        emit_if(SpriteFlag::DiagonalSlopedBankTransition,
+        emit_if(SpriteFlag::flatSlope,              "Rendering flat sprites",                          kFlatSlopeRot);
+        emit_if(SpriteFlag::gentleSlope,            "Rendering gentle sprites",                        kGentleSlopeRot);
+        emit_if(SpriteFlag::steepSlope,             "Rendering steep sprites",                         kSteepSlopeRot);
+        emit_if(SpriteFlag::verticalSlope,          "Rendering vertical sprites",                      kVerticalSlopeRot);
+        emit_if(SpriteFlag::diagonalSlope,          "Rendering diagonal sprites",                      kDiagonalSlopeRot);
+        emit_if(SpriteFlag::banking,                "Rendering banked sprites",                        kBankingRot);
+        emit_if(SpriteFlag::inlineTwist,            "Rendering inline twist sprites",                  kInlineTwistRot);
+        emit_if(SpriteFlag::slopeBankTransition,    "Rendering slope-bank transition sprites",         kSlopeBankTransitionRot);
+        emit_if(SpriteFlag::diagonalBankTransition, "Rendering diagonal slope-bank transition sprites",kDiagonalBankTransitionRot);
+        emit_if(SpriteFlag::slopedBankTransition,   "Rendering sloped bank transition sprites",        kSlopedBankTransitionRot);
+        emit_if(SpriteFlag::diagonalSlopedBankTransition,
                 "Rendering diagonal sloped bank transition sprites",                                   kDiagonalSlopedBankTransitionRot);
-        emit_if(SpriteFlag::SlopedBankedTurn,       "Rendering sloped banked sprites",                 kSlopedBankedTurnRot);
-        emit_if(SpriteFlag::BankedSlopeTransition,  "Rendering banked slope transition sprites",       kBankedSlopeTransitionRot);
+        emit_if(SpriteFlag::slopedBankedTurn,       "Rendering sloped banked sprites",                 kSlopedBankedTurnRot);
+        emit_if(SpriteFlag::bankedSlopeTransition,  "Rendering banked slope transition sprites",       kBankedSlopeTransitionRot);
 
-        if (has_flag(sprite_flags, SpriteFlag::ZeroGRoll))
+        if (has_flag(sprite_flags, SpriteFlag::zeroGRoll))
         {
             print_msg("Rendering zero G roll sprites");
             base += render_group(context, kZeroGRollBaseRot, out + base);
-            std::span<const Rotation> sb22 = has_flag(sprite_flags, SpriteFlag::DiveLoop)
+            std::span<const Rotation> sb22 = has_flag(sprite_flags, SpriteFlag::diveLoop)
                 ? std::span<const Rotation>(kZeroGRollSteepBank22_8)
                 : std::span<const Rotation>(kZeroGRollSteepBank22_4);
             base += render_group(context, sb22, out + base);
         }
-        if (has_flag(sprite_flags, SpriteFlag::DiveLoop))
+        if (has_flag(sprite_flags, SpriteFlag::diveLoop))
         {
             print_msg("Rendering dive loop sprites");
             base += render_group(context, kDiveLoopRot, out + base);
         }
-        if (has_flag(sprite_flags, SpriteFlag::Corkscrew))
+        if (has_flag(sprite_flags, SpriteFlag::corkscrew))
         {
             print_msg("Rendering corkscrew sprites");
             const auto& rots = corkscrew_rotations();

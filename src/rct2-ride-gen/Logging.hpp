@@ -6,7 +6,7 @@
 #include <string_view>
 #include <utility>
 
-namespace rctgen
+namespace RCTGen
 {
     void log_line(std::string_view message);
 

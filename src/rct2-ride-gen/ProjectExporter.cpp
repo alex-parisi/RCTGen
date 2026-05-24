@@ -25,7 +25,7 @@
 
 namespace fs = std::filesystem;
 
-namespace rctgen
+namespace RCTGen
 {
     namespace
     {
@@ -33,13 +33,13 @@ namespace rctgen
         // Preserves the historical mapping (which does not align name-for-name
         // with the running-sound names — see Constants.hpp).
         constexpr std::array<std::uint8_t, 7> kFrictionSoundIds = {
-            std::to_underlying(RunningSound::WoodenOld),
-            std::to_underlying(RunningSound::WoodenModern),
-            std::to_underlying(RunningSound::Steel),
-            std::to_underlying(RunningSound::SteelSmooth),
-            std::to_underlying(RunningSound::Waterslide),
-            std::to_underlying(RunningSound::Train),
-            std::to_underlying(RunningSound::Engine),
+            std::to_underlying(RunningSound::woodenOld),
+            std::to_underlying(RunningSound::woodenModern),
+            std::to_underlying(RunningSound::steel),
+            std::to_underlying(RunningSound::steelSmooth),
+            std::to_underlying(RunningSound::waterslide),
+            std::to_underlying(RunningSound::train),
+            std::to_underlying(RunningSound::engine),
         };
 
         void add_model_to_context(
@@ -68,53 +68,53 @@ namespace rctgen
                 json_object_set_new(sprite_groups, key, json_integer(n));
             };
 
-            if (has_flag(sf, SpriteFlag::FlatSlope))       set("slopeFlat", 32);
-            if (has_flag(sf, SpriteFlag::GentleSlope))   { set("slopes12", 4);   set("slopes25", 32); }
-            if (has_flag(sf, SpriteFlag::SteepSlope))    { set("slopes42", 8);   set("slopes60", 32); }
-            if (has_flag(sf, SpriteFlag::VerticalSlope))
+            if (has_flag(sf, SpriteFlag::flatSlope))       set("slopeFlat", 32);
+            if (has_flag(sf, SpriteFlag::gentleSlope))   { set("slopes12", 4);   set("slopes25", 32); }
+            if (has_flag(sf, SpriteFlag::steepSlope))    { set("slopes42", 8);   set("slopes60", 32); }
+            if (has_flag(sf, SpriteFlag::verticalSlope))
             {
                 set("slopes75", 4); set("slopes90", 32);
                 set("slopesLoop", 4); set("slopeInverted", 4);
             }
-            if (has_flag(sf, SpriteFlag::DiagonalSlope))
+            if (has_flag(sf, SpriteFlag::diagonalSlope))
             {
                 set("slopes8", 4); set("slopes16", 4); set("slopes50", 4);
             }
-            if (has_flag(sf, SpriteFlag::Banking))
+            if (has_flag(sf, SpriteFlag::banking))
             {
                 set("flatBanked22", 8); set("flatBanked45", 32);
             }
-            if (has_flag(sf, SpriteFlag::InlineTwist))
+            if (has_flag(sf, SpriteFlag::inlineTwist))
             {
                 set("flatBanked67", 4); set("flatBanked90", 4); set("inlineTwists", 4);
             }
-            if (has_flag(sf, SpriteFlag::SlopeBankTransition))      set("slopes12Banked22", 32);
-            if (has_flag(sf, SpriteFlag::DiagonalBankTransition))   set("slopes8Banked22", 4);
-            if (has_flag(sf, SpriteFlag::SlopedBankTransition))     set("slopes25Banked22", 4);
-            if (has_flag(sf, SpriteFlag::DiagonalSlopedBankTransition))
+            if (has_flag(sf, SpriteFlag::slopeBankTransition))      set("slopes12Banked22", 32);
+            if (has_flag(sf, SpriteFlag::diagonalBankTransition))   set("slopes8Banked22", 4);
+            if (has_flag(sf, SpriteFlag::slopedBankTransition))     set("slopes25Banked22", 4);
+            if (has_flag(sf, SpriteFlag::diagonalSlopedBankTransition))
             {
                 set("slopes8Banked45", 4);
                 set("slopes16Banked22", 4);
                 set("slopes16Banked45", 4);
             }
-            if (has_flag(sf, SpriteFlag::SlopedBankedTurn))         set("slopes25Banked45", 32);
-            if (has_flag(sf, SpriteFlag::BankedSlopeTransition))    set("slopes12Banked45", 4);
-            if (has_flag(sf, SpriteFlag::ZeroGRoll))
+            if (has_flag(sf, SpriteFlag::slopedBankedTurn))         set("slopes25Banked45", 32);
+            if (has_flag(sf, SpriteFlag::bankedSlopeTransition))    set("slopes12Banked45", 4);
+            if (has_flag(sf, SpriteFlag::zeroGRoll))
             {
                 set("slopes25Banked67", 4); set("slopes25Banked90", 4);
                 set("slopes25InlineTwists", 4); set("slopes42Banked22", 4);
                 set("slopes42Banked45", 4); set("slopes42Banked67", 4);
                 set("slopes42Banked90", 4);
-                set("slopes60Banked22", has_flag(sf, SpriteFlag::DiveLoop) ? 8 : 4);
+                set("slopes60Banked22", has_flag(sf, SpriteFlag::diveLoop) ? 8 : 4);
             }
-            if (has_flag(sf, SpriteFlag::DiveLoop))
+            if (has_flag(sf, SpriteFlag::diveLoop))
             {
                 set("slopes50Banked45", 8);
                 set("slopes50Banked67", 8);
                 set("slopes50Banked90", 8);
             }
-            if (has_flag(sf, SpriteFlag::Corkscrew))                set("corkscrews", 4);
-            if (has_flag(vf, VehicleFlag::RestraintAnimation))      set("restraintAnimation", 4);
+            if (has_flag(sf, SpriteFlag::corkscrew))                set("corkscrews", 4);
+            if (has_flag(vf, VehicleFlag::restraintAnimation))      set("restraintAnimation", 4);
         }
 
         JsonRef build_project_json(const Project& project)
@@ -144,19 +144,19 @@ namespace rctgen
             json_object_set_new(properties, "numEmptyCars",    json_integer(project.zero_cars));
             json_object_set_new(properties, "tabCar",          json_integer(project.tab_car));
             json_object_set_new(properties, "defaultCar",
-                json_integer(project.configuration[std::to_underlying(CarIndex::Default)]));
+                json_integer(project.configuration[std::to_underlying(CarIndex::defaultVal)]));
 
-            auto front = project.configuration[std::to_underlying(CarIndex::Front)];
+            auto front = project.configuration[std::to_underlying(CarIndex::front)];
             if (front != 0xFF) json_object_set_new(properties, "headCars", json_integer(front));
-            auto rear = project.configuration[std::to_underlying(CarIndex::Rear)];
+            auto rear = project.configuration[std::to_underlying(CarIndex::rear)];
             if (rear != 0xFF) json_object_set_new(properties, "tailCars", json_integer(rear));
 
             json_object_set_new(properties, "buildMenuPriority", json_integer(project.build_menu_priority));
 
             auto rf = static_cast<RideFlag>(project.flags);
-            if (has_flag(rf, RideFlag::NoCollisionCrashes))
+            if (has_flag(rf, RideFlag::noCollisionCrashes))
                 json_object_set_new(properties, "noCollisionCrashes", json_true());
-            if (has_flag(rf, RideFlag::RiderControlsSpeed))
+            if (has_flag(rf, RideFlag::riderControlsSpeed))
                 json_object_set_new(properties, "riderControlsSpeed", json_true());
 
             // Color presets — wrapped in arrays-of-arrays.
@@ -200,11 +200,11 @@ namespace rctgen
                 json_object_set_new(car, "spriteGroups", sprite_groups);
 
                 auto vf = static_cast<VehicleFlag>(vehicle.flags);
-                if (has_flag(vf, VehicleFlag::SecondaryRemap))
+                if (has_flag(vf, VehicleFlag::secondaryRemap))
                     json_object_set_new(car, "hasAdditionalColour1", json_true());
-                if (has_flag(vf, VehicleFlag::TertiaryRemap))
+                if (has_flag(vf, VehicleFlag::tertiaryRemap))
                     json_object_set_new(car, "hasAdditionalColour2", json_true());
-                if (has_flag(vf, VehicleFlag::RidersScream))
+                if (has_flag(vf, VehicleFlag::ridersScream))
                     json_object_set_new(car, "hasScreamingRiders", json_true());
 
                 json_t* loading_positions = json_array();
@@ -267,7 +267,7 @@ namespace rctgen
                 Vehicle& vehicle = project.vehicles[i];
                 const auto sf = static_cast<SpriteFlag>(project.sprite_flags);
                 const auto vf = static_cast<VehicleFlag>(vehicle.flags);
-                const int num_frames = has_flag(vf, VehicleFlag::RestraintAnimation) ? 4 : 1;
+                const int num_frames = has_flag(vf, VehicleFlag::restraintAnimation) ? 4 : 1;
                 const int num_car_images = count_sprites(sf, vf);
                 const int num_images = num_car_images * (1 + static_cast<int>(vehicle.riders.size()));
 
@@ -461,7 +461,7 @@ namespace rctgen
         {
             Vehicle& vehicle = project.vehicles[i];
             const auto vf = static_cast<VehicleFlag>(vehicle.flags);
-            const int num_frames = has_flag(vf, VehicleFlag::RestraintAnimation) ? 4 : 1;
+            const int num_frames = has_flag(vf, VehicleFlag::restraintAnimation) ? 4 : 1;
             for (int j = 0; j < num_frames; j++)
             {
                 print_msg("Rendering vehicle {} frame {}", i, j);

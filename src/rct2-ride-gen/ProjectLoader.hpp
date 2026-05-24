@@ -12,7 +12,7 @@
 #include "Model.hpp"
 #include "Project.hpp"
 
-namespace rctgen
+namespace RCTGen
 {
     using LoadError = std::string;
 
