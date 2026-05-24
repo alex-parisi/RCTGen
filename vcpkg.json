@@ -5,7 +5,7 @@
         "zlib",
         "libpng",
         "assimp",
-        "embree3",
+        "embree",
         "jansson",
         "libzip"
     ]
