@@ -1,79 +1,85 @@
-#define NOMINMAX
-#define _USE_MATH_DEFINES
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
-#include<string.h>
-#include<stdbool.h>
-#include<assert.h>
-#include<errno.h>
 #include "renderer.h"
+#include "model.h"
 #include "palette.h"
 #include "vectormath.h"
-#include "model.h"
 
-//3.67 metres per tile
-#define SQRT_2 1.4142135623731f
-#define SQRT1_2 0.707106781f
-#define SQRT_3 1.73205080757f
-#define SQRT_6 2.44948974278f
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <numbers>
+#include <vector>
 
-matrix_t views[4] = { {1,0,0,0,1,0,0,0,1},{0,0,1,0,1,0,-1,0,0},{-1,0,0,0,1,0,0,0,-1},{0,0,-1,0,1,0,1,0,0} };
+// Coordinate-system constants for the dimetric projection.
+namespace
+{
+inline constexpr float SQRT_2  = 1.4142135623731f;
+inline constexpr float SQRT1_2 = 0.707106781f;
+inline constexpr float SQRT_3  = 1.73205080757f;
+inline constexpr float SQRT_6  = 2.44948974278f;
 
-#define AO_NUM_SAMPLES_U 8
-#define AO_NUM_SAMPLES_V 4
-#define AA_NUM_SAMPLES_U 4
-#define AA_NUM_SAMPLES_V 4
-#define AA_SAMPLE_WEIGHT (1.0/(AA_NUM_SAMPLES_U*AA_NUM_SAMPLES_V))
+inline constexpr int AO_NUM_SAMPLES_U = 8;
+inline constexpr int AO_NUM_SAMPLES_V = 4;
+inline constexpr int AA_NUM_SAMPLES_U = 4;
+inline constexpr int AA_NUM_SAMPLES_V = 4;
+inline constexpr float AA_SAMPLE_WEIGHT = 1.0f / (AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V);
+}
 
-void context_init(context_t* context, light_t* lights, uint32_t num_lights, uint32_t dither, palette_t palette, float upt)
+std::array<matrix_t, 4> views{{
+    {{1, 0, 0, 0, 1, 0, 0, 0, 1}},
+    {{0, 0, 1, 0, 1, 0, -1, 0, 0}},
+    {{-1, 0, 0, 0, 1, 0, 0, 0, -1}},
+    {{0, 0, -1, 0, 1, 0, 1, 0, 0}},
+}};
+
+void context_init(context_t* context, light_t* lights, std::uint32_t num_lights, std::uint32_t dither, palette_t palette, float upt)
 {
     context->rt_device = device_init();
     context->lights = lights;
     context->num_lights = num_lights;
     context->dither = dither;
-    //Dimetric projection
-    const matrix_t projection = {
-        32.0f / upt ,0.0f ,-32.0f / upt,
-         -16.0f / upt ,-16.0f * SQRT_6 / upt ,-16.0f / upt,
-         16.0f * SQRT_3 / upt, -16.0f * SQRT_2 / upt, 16.0f * SQRT_3 / upt
-    };
-    context->projection = projection;
+    context->projection = matrix_t{{
+        32.0f / upt, 0.0f, -32.0f / upt,
+        -16.0f / upt, -16.0f * SQRT_6 / upt, -16.0f / upt,
+        16.0f * SQRT_3 / upt, -16.0f * SQRT_2 / upt, 16.0f * SQRT_3 / upt,
+    }};
     context->palette = palette;
 }
 
 void context_begin_render(context_t* context)
 {
-    scene_init(&(context->rt_scene), context->rt_device);
+    scene_init(&context->rt_scene, context->rt_device);
 }
 
-vertex_t linear_transform(vector3_t vertex, vector3_t normal, const bool flat_shaded, void* matptr)
+static vertex_t linear_transform(vector3_t vertex, vector3_t normal, const bool /*flat_shaded*/, void* matptr)
 {
-    transform_t transform = *((transform_t*)matptr);
+    const transform_t trans = *static_cast<transform_t*>(matptr);
     vertex_t out;
-    out.vertex = transform_vector(transform, vertex);
-    out.normal = vector3_normalize(matrix_vector(transform.matrix, normal));
+    out.vertex = transform_vector(trans, vertex);
+    out.normal = matrix_vector(trans.matrix, normal).normalized();
     return out;
 }
 
-void context_add_model_transformed(context_t* context, mesh_t* mesh, vertex_t(*transform)(vector3_t, vector3_t, bool, void*), void* data, int mask)
+void context_add_model_transformed(context_t* context, mesh_t* mesh, vertex_t (*transform)(vector3_t, vector3_t, bool, void*), void* data, int mask)
 {
-    scene_add_model(&(context->rt_scene), mesh, transform, data, mask);
+    scene_add_model(&context->rt_scene, mesh, transform, data, mask);
 }
 
-void context_add_model(context_t* context, mesh_t* mesh, transform_t transform, int mask)
+void context_add_model(context_t* context, mesh_t* mesh, transform_t trans, int mask)
 {
-    scene_add_model(&(context->rt_scene), mesh, &linear_transform, &transform, mask);
+    scene_add_model(&context->rt_scene, mesh, &linear_transform, &trans, mask);
 }
 
 void context_finalize_render(context_t* context)
 {
-    scene_finalize(&(context->rt_scene));
+    scene_finalize(&context->rt_scene);
 }
 
 void context_end_render(context_t* context)
 {
-    scene_destroy(&(context->rt_scene));
+    scene_destroy(&context->rt_scene);
 }
 
 void context_destroy(context_t* context)
@@ -81,30 +87,33 @@ void context_destroy(context_t* context)
     device_destroy(context->rt_device);
 }
 
-//Specular shading code from Blender. Not sure what it does
-float spec(float inp, int hard)
+namespace
+{
+
+// Specular shading helper (translated from the original Blender code).
+constexpr float spec(float inp, int hard) noexcept
 {
     if (inp >= 1.0f) return 1.0f;
-    else if (inp <= 0.0f) return 0.0f;
+    if (inp <= 0.0f) return 0.0f;
 
     float b1 = inp * inp;
     if (b1 < 0.01f) b1 = 0.01f;
 
-    if ((hard & 1) == 0)  inp = 1.0f;
-    if (hard & 2)  inp *= b1;
+    if ((hard & 1) == 0) inp = 1.0f;
+    if (hard & 2)   inp *= b1;
     b1 *= b1;
-    if (hard & 4)  inp *= b1;
+    if (hard & 4)   inp *= b1;
     b1 *= b1;
-    if (hard & 8)  inp *= b1;
+    if (hard & 8)   inp *= b1;
     b1 *= b1;
-    if (hard & 16) inp *= b1;
+    if (hard & 16)  inp *= b1;
     b1 *= b1;
 
     if (b1 < 0.001f) b1 = 0.0f;
 
-    if (hard & 32) inp *= b1;
+    if (hard & 32)  inp *= b1;
     b1 *= b1;
-    if (hard & 64) inp *= b1;
+    if (hard & 64)  inp *= b1;
     b1 *= b1;
     if (hard & 128) inp *= b1;
 
@@ -118,129 +127,126 @@ float spec(float inp, int hard)
     return inp;
 }
 
-float cook_torr_spec(vector3_t n, vector3_t l, vector3_t v, int hard)
+constexpr float vector3_dot_clamped(vector3_t a, vector3_t b) noexcept
 {
-    vector3_t h = vector3_normalize(vector3_add(v, l));
-
-    float nh = vector3_dot(n, h);
-    if (nh < 0.0f) return 0.0f;
-    float nv = vector3_dot(n, v);
-    if (nv < 0.0f) nv = 0.0f;
-
-    return spec(nh, hard) / (0.1f + nv);
+    return std::max(a.dot(b), 0.0f);
 }
 
-float vector3_dot_clamped(vector3_t a, vector3_t b)
-{
-    return (float)fmax(vector3_dot(a, b), 0.0f);
-}
-
-
-vector3_t shade_fragment(scene_t* scene, vector3_t pos, vector3_t normal, vector3_t view, vector3_t color, vector3_t specular_color, float specular_exponent, vector3_t ambient_color, light_t* lights, uint32_t num_lights)
+vector3_t shade_fragment(scene_t* scene, vector3_t pos, vector3_t normal, vector3_t view, vector3_t color,
+                         vector3_t specular_color, float specular_exponent, vector3_t ambient_color,
+                         light_t* lights, std::uint32_t num_lights)
 {
     vector3_t output_color = vector3(0, 0, 0);
 
-    for (uint32_t i = 0; i < num_lights; i++)
+    for (std::uint32_t i = 0; i < num_lights; ++i)
     {
-        if (lights[i].shadow && scene_trace_occlusion_ray(scene, pos, lights[i].direction))continue;
+        if (lights[i].shadow && scene_trace_occlusion_ray(scene, pos, lights[i].direction)) continue;
         if (lights[i].type == LIGHT_HEMI)
         {
-            float diffuse_factor = 0.5f * lights[i].intensity * (1 + vector3_dot(normal, lights[i].direction));
-            output_color = vector3_add(vector3_mult(color, diffuse_factor), output_color);
+            const float diffuse_factor = 0.5f * lights[i].intensity * (1 + normal.dot(lights[i].direction));
+            output_color = output_color + color * diffuse_factor;
         }
         else if (lights[i].type == LIGHT_DIFFUSE)
         {
-            float diffuse_factor = lights[i].intensity * vector3_dot_clamped(normal, lights[i].direction);
-            output_color = vector3_add(vector3_mult(color, diffuse_factor), output_color);
+            const float diffuse_factor = lights[i].intensity * vector3_dot_clamped(normal, lights[i].direction);
+            output_color = output_color + color * diffuse_factor;
         }
         else
         {
-            vector3_t reflected_light_direction = vector3_sub(vector3_mult(normal, 2.0f * vector3_dot(lights[i].direction, normal)), lights[i].direction);
-            float specular_factor = lights[i].intensity * powf(vector3_dot_clamped(reflected_light_direction, view), specular_exponent);
-            output_color = vector3_add(vector3_mult(specular_color, specular_factor), output_color);
+            const vector3_t reflected = normal * (2.0f * lights[i].direction.dot(normal)) - lights[i].direction;
+            const float specular_factor = lights[i].intensity * std::pow(vector3_dot_clamped(reflected, view), specular_exponent);
+            output_color = output_color + specular_color * specular_factor;
         }
     }
-    return vector3_add(output_color, ambient_color);
+    return output_color + ambient_color;
 }
 
-int scene_sample_point(scene_t* scene, vector2_t point, matrix_t camera, light_t* lights, uint32_t num_lights, fragment_t* fragment)
+int scene_sample_point(scene_t* scene, vector2_t point, matrix_t camera, light_t* lights, std::uint32_t num_lights, fragment_t* fragment)
 {
     ray_hit_t hit;
     vector3_t view_vector = matrix_vector(camera, vector3(0, 0, -1));
-    if (scene_trace_ray(scene, matrix_vector(camera, vector3(point.x, point.y, -512)), vector3_mult(view_vector, -1), &hit))
+    if (scene_trace_ray(scene, matrix_vector(camera, vector3(point.x, point.y, -512)), view_vector * -1, &hit))
     {
-        view_vector = vector3_normalize(view_vector);
+        view_vector = view_vector.normalized();
         mesh_t* mesh = scene->meshes[hit.mesh_index];
         face_t* face = mesh->faces + hit.face_index;
         material_t* material = mesh->materials + face->material;
 
-        //Check if this is a mask
         if (scene_is_mask(scene, hit.mesh_index) || material->flags & MATERIAL_IS_MASK)
         {
             fragment->color = vector3(0, 1, 0);
             fragment->depth = hit.distance;
-            fragment->flags = material->flags | MATERIAL_IS_MASK;
+            fragment->flags = static_cast<std::uint8_t>(material->flags | MATERIAL_IS_MASK);
             fragment->region = FRAGMENT_UNUSED;
             return 1;
         }
 
-        //Compute surface color
         vector3_t color;
         if (material->flags & MATERIAL_HAS_TEXTURE)
         {
-            vector2_t tex_coord = vector2_add(vector2_add(vector2_mult(mesh->uvs[face->indices[0]], 1.0f - hit.u - hit.v), vector2_mult(mesh->uvs[face->indices[1]], hit.u)), vector2_mult(mesh->uvs[face->indices[2]], hit.v));
-            color = texture_sample(&(material->texture), tex_coord);
+            const vector2_t tex_coord =
+                mesh->uvs[face->indices[0]] * (1.0f - hit.u - hit.v)
+                + mesh->uvs[face->indices[1]] * hit.u
+                + mesh->uvs[face->indices[2]] * hit.v;
+            color = texture_sample(&material->texture, tex_coord);
         }
-        else color = material->color;
-        //Remappable colors should be rendered as grayscale
+        else
+        {
+            color = material->color;
+        }
+
         if (material->flags & MATERIAL_IS_REMAPPABLE)
         {
-            float intensity = fmax(fmax(color.x, color.y), color.z);
-            color = vector3_from_scalar(intensity);
+            const float intensity = std::max({color.x, color.y, color.z});
+            color = vector3_t::splat(intensity);
         }
 
-        //Shade fragment
-        vector3_t shaded_color = shade_fragment(scene, hit.position, hit.normal, view_vector, color, material->specular_color, material->specular_exponent, material->ambient_color, lights, num_lights);
+        const vector3_t shaded = shade_fragment(scene, hit.position, hit.normal, view_vector, color,
+                                                material->specular_color, material->specular_exponent,
+                                                material->ambient_color, lights, num_lights);
 
-        vector3_t normal = hit.normal;
+        const vector3_t normal = hit.normal;
         vector3_t tangent;
-        if (fabs(normal.x) > fabs(normal.y)) tangent = vector3_mult(vector3(normal.z, 0, -normal.x), 1.0f / sqrt(normal.x * normal.x + normal.z * normal.z));
-        else tangent = vector3_mult(vector3(0, -normal.z, normal.y), 1.0f / sqrt(normal.y * normal.y + normal.z * normal.z));
-        vector3_t bitangent = vector3_cross(normal, tangent);
+        if (std::fabs(normal.x) > std::fabs(normal.y))
+            tangent = vector3(normal.z, 0, -normal.x) * (1.0f / std::sqrt(normal.x * normal.x + normal.z * normal.z));
+        else
+            tangent = vector3(0, -normal.z, normal.y) * (1.0f / std::sqrt(normal.y * normal.y + normal.z * normal.z));
+        const vector3_t bitangent = normal.cross(tangent);
 
         float ao_factor = 1.0f;
         if (!(material->flags & MATERIAL_NO_AO))
         {
-            uint32_t not_occluded_samples = 0;
-            for (int i = 0; i < AO_NUM_SAMPLES_U; i++)
-                for (int j = 0; j < AO_NUM_SAMPLES_V; j++)
+            std::uint32_t not_occluded_samples = 0;
+            for (int i = 0; i < AO_NUM_SAMPLES_U; ++i)
+                for (int j = 0; j < AO_NUM_SAMPLES_V; ++j)
                 {
-                    float theta = 2 * M_PI * ((i + (((float)rand()) / RAND_MAX)) / AO_NUM_SAMPLES_U);
-                    float phi = asin(1 - ((j + (((float)rand()) / RAND_MAX)) / AO_NUM_SAMPLES_V));
+                    const float theta = 2 * std::numbers::pi_v<float> * ((i + static_cast<float>(std::rand()) / RAND_MAX) / AO_NUM_SAMPLES_U);
+                    const float phi = std::asin(1 - ((j + static_cast<float>(std::rand()) / RAND_MAX) / AO_NUM_SAMPLES_V));
 
-                    vector3_t local_sample_dir = vector3(cos(phi) * sin(theta), cos(phi) * cos(theta), sin(phi));
-                    vector3_t sample_dir = vector3_add(vector3_mult(normal, local_sample_dir.z), vector3_add(vector3_mult(tangent, local_sample_dir.x), vector3_mult(bitangent, local_sample_dir.y)));
-                    if (!scene_trace_occlusion_ray(scene, hit.position, sample_dir))not_occluded_samples++;
+                    const vector3_t local = vector3(std::cos(phi) * std::sin(theta), std::cos(phi) * std::cos(theta), std::sin(phi));
+                    const vector3_t sample_dir = normal * local.z + tangent * local.x + bitangent * local.y;
+                    if (!scene_trace_occlusion_ray(scene, hit.position, sample_dir)) not_occluded_samples++;
                 }
-            ao_factor = ((float)not_occluded_samples) / (AO_NUM_SAMPLES_U * AO_NUM_SAMPLES_V);
+            ao_factor = static_cast<float>(not_occluded_samples) / (AO_NUM_SAMPLES_U * AO_NUM_SAMPLES_V);
         }
-        //Write result
-        fragment->color = vector3_mult(shaded_color, ao_factor);
+
+        fragment->color = shaded * ao_factor;
         fragment->depth = hit.distance;
         fragment->ghost_depth = hit.ghost_distance;
-        fragment->flags = material->flags;
+        fragment->flags = static_cast<std::uint8_t>(material->flags);
         fragment->region = material->region;
         return 1;
     }
     fragment->ghost_depth = hit.ghost_distance;
     return 0;
 }
+
 int scene_sample_material(scene_t* scene, vector2_t point, matrix_t camera, material_t** material_out, float* depth_out, float* ghost_depth_out, int* is_mask)
 {
     ray_hit_t hit;
     vector3_t view_vector = matrix_vector(camera, vector3(0, 0, -1));
 
-    if (scene_trace_ray(scene, matrix_vector(camera, vector3(point.x, point.y, -512)), vector3_mult(view_vector, -1), &hit))
+    if (scene_trace_ray(scene, matrix_vector(camera, vector3(point.x, point.y, -512)), view_vector * -1, &hit))
     {
         mesh_t* mesh = scene->meshes[hit.mesh_index];
         face_t* face = mesh->faces + hit.face_index;
@@ -256,41 +262,39 @@ int scene_sample_material(scene_t* scene, vector2_t point, matrix_t camera, mate
     return 0;
 }
 
-rect_t rect(int xl, int xu, int yl, int yu)
+constexpr rect_t make_rect(int xl, int xu, int yl, int yu) noexcept
 {
-    rect_t result = { xl,yl,xu,yu };
-    return result;
+    return {xl, yl, xu, yu};
 }
-rect_t rect_enclose_point(rect_t r, float x, float y)
+
+rect_t rect_enclose_point(rect_t r, float x, float y) noexcept
 {
-    return rect((int)fmin(r.x_lower, floor(x)), (int)fmax(r.x_upper, ceil(x)),
-        (int)fmin(r.y_lower, floor(y)), (int)fmax(r.y_upper, ceil(y)));
+    return make_rect(static_cast<int>(std::min<float>(r.x_lower, std::floor(x))),
+                     static_cast<int>(std::max<float>(r.x_upper, std::ceil(x))),
+                     static_cast<int>(std::min<float>(r.y_lower, std::floor(y))),
+                     static_cast<int>(std::max<float>(r.y_upper, std::ceil(y))));
 }
 
 rect_t scene_get_bounds(scene_t* scene, matrix_t camera)
 {
-    /*
-    rect_t bounds;
-    bounds.x_lower=-128;
-    bounds.x_upper=128;
-    bounds.y_lower=-128;
-    bounds.y_upper=128;
-    return bounds;
-    */
-    vector3_t bounding_points[8] = {
-    vector3(scene->x_min,scene->y_min,scene->z_min),
-    vector3(scene->x_max,scene->y_min,scene->z_min),
-    vector3(scene->x_min,scene->y_max,scene->z_min),
-    vector3(scene->x_max,scene->y_max,scene->z_min),
-    vector3(scene->x_min,scene->y_min,scene->z_max),
-    vector3(scene->x_max,scene->y_min,scene->z_max),
-    vector3(scene->x_min,scene->y_max,scene->z_max),
-    vector3(scene->x_max,scene->y_max,scene->z_max) };
+    const vector3_t bounding_points[8] = {
+        vector3(scene->x_min, scene->y_min, scene->z_min),
+        vector3(scene->x_max, scene->y_min, scene->z_min),
+        vector3(scene->x_min, scene->y_max, scene->z_min),
+        vector3(scene->x_max, scene->y_max, scene->z_min),
+        vector3(scene->x_min, scene->y_min, scene->z_max),
+        vector3(scene->x_max, scene->y_min, scene->z_max),
+        vector3(scene->x_min, scene->y_max, scene->z_max),
+        vector3(scene->x_max, scene->y_max, scene->z_max),
+    };
 
-    rect_t bounds = rect((int)floor(bounding_points[0].x), (int)ceil(bounding_points[0].x), (int)floor(bounding_points[0].y), (int)ceil(bounding_points[0].y));
-    for (int j = 0; j < 8; j++)
+    rect_t bounds = make_rect(static_cast<int>(std::floor(bounding_points[0].x)),
+                              static_cast<int>(std::ceil(bounding_points[0].x)),
+                              static_cast<int>(std::floor(bounding_points[0].y)),
+                              static_cast<int>(std::ceil(bounding_points[0].y)));
+    for (const auto& p : bounding_points)
     {
-        vector3_t screen_point = matrix_vector(camera, bounding_points[j]);
+        const vector3_t screen_point = matrix_vector(camera, p);
         bounds = rect_enclose_point(bounds, screen_point.x, screen_point.y);
     }
     bounds.x_lower--;
@@ -300,94 +304,93 @@ rect_t scene_get_bounds(scene_t* scene, matrix_t camera)
     return bounds;
 }
 
-
-#define FRAMEBUFFER_INDEX(fbf,x,y) (framebuffer->fragments[(x)+(y)*framebuffer->width])
-
+inline fragment_t& framebuffer_at(framebuffer_t* fb, int x, int y) noexcept
+{
+    return fb->fragments[x + y * fb->width];
+}
 
 rect_t framebuffer_get_bounds(framebuffer_t* framebuffer)
 {
-    //printf("%d %d\n",framebuffer->width,framebuffer->height);
-    //return rect(0,framebuffer->width,0,framebuffer->height);
     int found_pixel = 0;
-    rect_t bounds;
-    for (uint32_t y = 0; y < framebuffer->height; y++)
-        for (uint32_t x = 0; x < framebuffer->width; x++)
+    rect_t bounds{};
+    for (std::uint32_t y = 0; y < framebuffer->height; ++y)
+        for (std::uint32_t x = 0; x < framebuffer->width; ++x)
         {
-            if (FRAMEBUFFER_INDEX(framebuffer, x, y).region != FRAGMENT_UNUSED)
+            if (framebuffer_at(framebuffer, x, y).region != FRAGMENT_UNUSED)
             {
-                if (found_pixel)
-                    bounds = rect_enclose_point(bounds, x, y);
+                if (found_pixel) bounds = rect_enclose_point(bounds, x, y);
                 else
                 {
-                    bounds = rect(x, x + 1, y, y + 1);
+                    bounds = make_rect(x, x + 1, y, y + 1);
                     found_pixel = 1;
                 }
             }
         }
-    //If the image is empty, just set the size as 1 pixel
-    if (!found_pixel)
-        return rect(0, 0, 0, 0);
-    else
-        return bounds;
+    if (!found_pixel) return make_rect(0, 0, 0, 0);
+    return bounds;
 }
 
-void image_from_framebuffer(image_t* image, framebuffer_t* framebuffer, palette_t* palette,uint32_t dither)
+void image_from_framebuffer(image_t* image, framebuffer_t* framebuffer, palette_t* palette, std::uint32_t dither)
 {
-rect_t bounding_box = framebuffer_get_bounds(framebuffer);
-image->width = 1 + bounding_box.x_upper - bounding_box.x_lower;
-image->height = 1 + bounding_box.y_upper - bounding_box.y_lower;
-image->x_offset = bounding_box.x_lower + floor(framebuffer->offset.x);
-image->y_offset = bounding_box.y_lower + floor(framebuffer->offset.y) - 1;//1 compensates for error not sure why it's needed TODO work out why it's needed
-image->pixels = (uint8_t*)calloc(image->width * image->height, sizeof(uint8_t));
+    const rect_t bb = framebuffer_get_bounds(framebuffer);
+    image->width  = static_cast<std::uint16_t>(1 + bb.x_upper - bb.x_lower);
+    image->height = static_cast<std::uint16_t>(1 + bb.y_upper - bb.y_lower);
+    image->x_offset = static_cast<std::int16_t>(bb.x_lower + std::floor(framebuffer->offset.x));
+    image->y_offset = static_cast<std::int16_t>(bb.y_lower + std::floor(framebuffer->offset.y) - 1);
+    image->pixels = static_cast<std::uint8_t*>(std::calloc(static_cast<std::size_t>(image->width) * image->height, sizeof(std::uint8_t)));
 
-	for (int y = bounding_box.y_lower; y <= bounding_box.y_upper; y++)
-	{
-	int start = (1 & 1) ? (bounding_box.x_upper) : bounding_box.x_lower;
-	int stop = (1 & 1) ? (bounding_box.x_lower - 1) : bounding_box.x_upper + 1;
-	int step = (1 & 1) ? -1 : 1;
-	
-		for (int x = start; x != stop; x += step)
-		{
-		fragment_t fragment = FRAMEBUFFER_INDEX(framebuffer, x, y);
-		fragment.color = vector_from_color(color_from_vector(fragment.color));
-			if (fragment.region != FRAGMENT_UNUSED)
-			{
-			vector3_t error;
-			image->pixels[(x - bounding_box.x_lower) + (y - bounding_box.y_lower) * image->width] = palette_get_nearest(palette, fragment.region & REGION_MASK, fragment.color, &error);
-				if(dither)
-				{
-				//Distribute error onto neighbouring points
-				int points[4][2] = { {x + step,y},{x - step,y + 1},{x,y + 1},{x + step,y + 1} };
-				float weights[4] = { 7.0 / 16.0,3.0 / 16.0,5.0 / 16.0,1.0 / 16.0 };
-					for (int i = 0; i < 4; i++)
-				    	if (points[i][0] >= 0 && points[i][0] < framebuffer->width - 1 && points[i][1] >= 0 && points[i][1] < framebuffer->height - 1 && (!(fragment.flags & MATERIAL_NO_BLEED) || (FRAMEBUFFER_INDEX(framebuffer, points[i][0], points[i][1]).flags & MATERIAL_NO_BLEED)))
-				 	{
-					FRAMEBUFFER_INDEX(framebuffer, points[i][0], points[i][1]).color = vector3_add(vector3_mult(error, 0.3 * weights[i]), FRAMEBUFFER_INDEX(framebuffer, points[i][0], points[i][1]).color);
-				   	}
-				}
-			}
-		}
-	}
-free(framebuffer->fragments);
+    for (int y = bb.y_lower; y <= bb.y_upper; ++y)
+    {
+        const int start = bb.x_lower;
+        const int stop  = bb.x_upper + 1;
+        const int step  = 1;
+
+        for (int x = start; x != stop; x += step)
+        {
+            fragment_t fragment = framebuffer_at(framebuffer, x, y);
+            fragment.color = vector_from_color(color_from_vector(fragment.color));
+            if (fragment.region != FRAGMENT_UNUSED)
+            {
+                vector3_t error;
+                image->pixels[(x - bb.x_lower) + (y - bb.y_lower) * image->width] =
+                    palette_get_nearest(palette, fragment.region & REGION_MASK, fragment.color, &error);
+                if (dither)
+                {
+                    const int points[4][2] = {{x + step, y}, {x - step, y + 1}, {x, y + 1}, {x + step, y + 1}};
+                    const float weights[4] = {7.0f / 16.0f, 3.0f / 16.0f, 5.0f / 16.0f, 1.0f / 16.0f};
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        const int px = points[i][0];
+                        const int py = points[i][1];
+                        if (px >= 0 && px < framebuffer->width - 1 && py >= 0 && py < framebuffer->height - 1
+                            && (!(fragment.flags & MATERIAL_NO_BLEED) || (framebuffer_at(framebuffer, px, py).flags & MATERIAL_NO_BLEED)))
+                        {
+                            framebuffer_at(framebuffer, px, py).color =
+                                framebuffer_at(framebuffer, px, py).color + error * (0.3f * weights[i]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    std::free(framebuffer->fragments);
 }
 
-void context_render_view_internal(context_t* context, matrix_t view, image_t* image, uint32_t silhouette)
+void context_render_view_internal(context_t* context, matrix_t view, image_t* image, std::uint32_t silhouette)
 {
-    matrix_t camera = matrix_mult(context->projection, view);
+    const matrix_t camera = matrix_mult(context->projection, view);
 
-    rect_t bounds = scene_get_bounds(&(context->rt_scene), camera);
+    const rect_t bounds = scene_get_bounds(&context->rt_scene, camera);
 
     framebuffer_t framebuffer;
-    framebuffer.width = bounds.x_upper - bounds.x_lower + 1;
-    framebuffer.height = bounds.y_upper - bounds.y_lower;
-    framebuffer.offset = vector2((float)(bounds.x_lower) - 0.5, (float)(bounds.y_lower));
-    framebuffer.fragments = (fragment_t*)malloc(framebuffer.width * framebuffer.height * sizeof(fragment_t));
+    framebuffer.width = static_cast<std::uint16_t>(bounds.x_upper - bounds.x_lower + 1);
+    framebuffer.height = static_cast<std::uint16_t>(bounds.y_upper - bounds.y_lower);
+    framebuffer.offset = vector2(static_cast<float>(bounds.x_lower) - 0.5f, static_cast<float>(bounds.y_lower));
+    framebuffer.fragments = static_cast<fragment_t*>(std::malloc(static_cast<std::size_t>(framebuffer.width) * framebuffer.height * sizeof(fragment_t)));
 
-
-    //Transform lights for view
-    light_t* transformed_lights = (light_t*)malloc(context->num_lights * sizeof(light_t));
-    matrix_t view_inverse = matrix_inverse(view);
-    for (uint32_t i = 0; i < context->num_lights; i++)
+    std::vector<light_t> transformed_lights(context->num_lights);
+    const matrix_t view_inverse = matrix_inverse(view);
+    for (std::uint32_t i = 0; i < context->num_lights; ++i)
     {
         transformed_lights[i].type = context->lights[i].type;
         transformed_lights[i].shadow = context->lights[i].shadow;
@@ -395,73 +398,69 @@ void context_render_view_internal(context_t* context, matrix_t view, image_t* im
         transformed_lights[i].intensity = context->lights[i].intensity;
     }
 
-
-    //Render image
-    for (int i = 0; i < framebuffer.width * framebuffer.height; i++)
+    for (int i = 0; i < framebuffer.width * framebuffer.height; ++i)
     {
-        framebuffer.fragments[i].color = vector3(0.0, 0.0, 0.0);
+        framebuffer.fragments[i].color = vector3(0.0f, 0.0f, 0.0f);
         framebuffer.fragments[i].region = FRAGMENT_UNUSED;
         framebuffer.fragments[i].depth = 0;
         framebuffer.fragments[i].flags = 0;
     }
 
-
-    matrix_t camera_inverse = matrix_inverse(camera);
-    for (int y = 0; y < framebuffer.height; y++)
-        for (int x = 0; x < framebuffer.width; x++)
+    const matrix_t camera_inverse = matrix_inverse(camera);
+    for (int y = 0; y < framebuffer.height; ++y)
+        for (int x = 0; x < framebuffer.width; ++x)
         {
-            vector2_t sample_point = vector2_add(vector2(x, y), framebuffer.offset);
+            const vector2_t sample_point = vector2(x, y) + framebuffer.offset;
             material_t* material;
 
-            //Test center
             int flags = 0;
             int region = FRAGMENT_UNUSED;
-            float depth = INFINITY;
-            float ghost_depth = INFINITY;
+            float depth = std::numeric_limits<float>::infinity();
+            float ghost_depth = std::numeric_limits<float>::infinity();
             int mask = 0;
-            if (scene_sample_material(&(context->rt_scene), sample_point, camera_inverse, &material, &depth, &ghost_depth, &mask))
+            if (scene_sample_material(&context->rt_scene, sample_point, camera_inverse, &material, &depth, &ghost_depth, &mask))
             {
                 region = mask ? FRAGMENT_UNUSED : material->region;
                 flags = material->flags;
-                if (material->flags & MATERIAL_IS_VISIBLE_MASK)mask = 1;
+                if (material->flags & MATERIAL_IS_VISIBLE_MASK) mask = 1;
             }
-            //Compute subsamples
-            fragment_t subsamples[AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V];
-            for (int i = 0; i < AA_NUM_SAMPLES_U; i++)
-                for (int j = 0; j < AA_NUM_SAMPLES_V; j++)
-                {
-                    subsamples[i + j * AA_NUM_SAMPLES_U].color = vector3(0, 0, 0);//vector3(0.0409151969068532,0.0437350292569735,0.04091519690685320);
-                    subsamples[i + j * AA_NUM_SAMPLES_U].region = FRAGMENT_UNUSED;
-                    subsamples[i + j * AA_NUM_SAMPLES_U].flags = 0;
-                    subsamples[i + j * AA_NUM_SAMPLES_U].depth = INFINITY;
 
-                    vector2_t subsample_point = vector2((i + 0.5f) / AA_NUM_SAMPLES_U - 0.5f, (j + 0.5f) / AA_NUM_SAMPLES_V - 0.5f);
+            fragment_t subsamples[AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V];
+            for (int i = 0; i < AA_NUM_SAMPLES_U; ++i)
+                for (int j = 0; j < AA_NUM_SAMPLES_V; ++j)
+                {
+                    auto& ss = subsamples[i + j * AA_NUM_SAMPLES_U];
+                    ss.color = vector3(0, 0, 0);
+                    ss.region = FRAGMENT_UNUSED;
+                    ss.flags = 0;
+                    ss.depth = std::numeric_limits<float>::infinity();
+
+                    const vector2_t sub_pt = vector2((i + 0.5f) / AA_NUM_SAMPLES_U - 0.5f, (j + 0.5f) / AA_NUM_SAMPLES_V - 0.5f);
 
                     if (!silhouette)
                     {
-                        scene_sample_point(&(context->rt_scene), vector2_add(sample_point, subsample_point), camera_inverse, transformed_lights, context->num_lights, subsamples + (i + j * AA_NUM_SAMPLES_U));
+                        scene_sample_point(&context->rt_scene, sample_point + sub_pt, camera_inverse, transformed_lights.data(), context->num_lights, &ss);
                     }
                     else
                     {
-                        float subsample_depth = 0.0;
-                        float subsample_ghost_depth = 0.0;
-                        material_t* subsample_material;
-                        int subsample_mask = 0;
-                        if (scene_sample_material(&(context->rt_scene), vector2_add(sample_point, subsample_point), camera_inverse, &subsample_material, &subsample_depth, &subsample_ghost_depth, &subsample_mask))
+                        float sub_depth = 0.0f;
+                        float sub_ghost = 0.0f;
+                        material_t* sub_mat;
+                        int sub_mask = 0;
+                        if (scene_sample_material(&context->rt_scene, sample_point + sub_pt, camera_inverse, &sub_mat, &sub_depth, &sub_ghost, &sub_mask))
                         {
-                            subsamples[i + j * AA_NUM_SAMPLES_U].color = vector3(0.5, 0.5, 0.5);
-                            subsamples[i + j * AA_NUM_SAMPLES_U].region = subsample_mask ? FRAGMENT_UNUSED : subsample_material->region;
-                            subsamples[i + j * AA_NUM_SAMPLES_U].flags = subsample_material->flags;
-                            subsamples[i + j * AA_NUM_SAMPLES_U].depth = subsample_depth;
-                            subsamples[i + j * AA_NUM_SAMPLES_U].ghost_depth = subsample_ghost_depth;
+                            ss.color = vector3(0.5f, 0.5f, 0.5f);
+                            ss.region = sub_mask ? FRAGMENT_UNUSED : sub_mat->region;
+                            ss.flags = static_cast<std::uint8_t>(sub_mat->flags);
+                            ss.depth = sub_depth;
+                            ss.ghost_depth = sub_ghost;
                         }
                     }
                 }
 
-            //Get frontmost background AA sample
             int front_background_aa_sample = -1;
-            float min_depth = INFINITY;
-            for (int i = 0; i < AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V; i++)
+            float min_depth = std::numeric_limits<float>::infinity();
+            for (int i = 0; i < AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V; ++i)
             {
                 if (subsamples[i].depth < min_depth && (subsamples[i].flags & (MATERIAL_BACKGROUND_AA | MATERIAL_BACKGROUND_AA_DARK)))
                 {
@@ -470,17 +469,14 @@ void context_render_view_internal(context_t* context, matrix_t view, image_t* im
                 }
             }
 
-
-            //If there exists a sample forward of the center point with background AA enabled, use that instead of the center point
             if (front_background_aa_sample != -1 && (min_depth < ghost_depth - 4 || mask))
             {
-                //Count samples that fall inside the presumed edge
                 int inside_samples = 0;
-                for (int i = 0; i < AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V; i++)
+                for (int i = 0; i < AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V; ++i)
                 {
-                    if (!(subsamples[i].depth > min_depth + 4 || (subsamples[i].region == FRAGMENT_UNUSED && !subsamples[i].flags & MATERIAL_IS_MASK) || (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))inside_samples++;
+                    if (!(subsamples[i].depth > min_depth + 4 || (subsamples[i].region == FRAGMENT_UNUSED && !(subsamples[i].flags & MATERIAL_IS_MASK)) || (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))
+                        inside_samples++;
                 }
-                //If more than three samples found, use the forwardmost point
                 if (inside_samples > 3)
                 {
                     region = subsamples[front_background_aa_sample].region;
@@ -488,57 +484,57 @@ void context_render_view_internal(context_t* context, matrix_t view, image_t* im
                     flags = subsamples[front_background_aa_sample].flags;
                 }
             }
-            framebuffer.fragments[x + y * framebuffer.width].region = region;
-            framebuffer.fragments[x + y * framebuffer.width].flags = flags;
+            framebuffer.fragments[x + y * framebuffer.width].region = static_cast<std::uint8_t>(region);
+            framebuffer.fragments[x + y * framebuffer.width].flags = static_cast<std::uint8_t>(flags);
 
-            //If this is a background pixel, there is no need to compute the color
-            if (region == FRAGMENT_UNUSED)continue;
+            if (region == FRAGMENT_UNUSED) continue;
 
             if (flags & (MATERIAL_BACKGROUND_AA | MATERIAL_BACKGROUND_AA_DARK))
             {
-                //Count samples that fall outside the presumed edge
                 vector3_t color = vector3(0, 0, 0);
                 float weight = 0;
                 float total_weight = 0;
                 int inside_samples = 0;
-                for (int i = 0; i < AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V; i++)
+                for (int i = 0; i < AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V; ++i)
                 {
-                    if ((!(subsamples[i].flags & MATERIAL_NO_BLEED) || (flags & MATERIAL_NO_BLEED)) && !((subsamples[i].ghost_depth <= depth + 4 && subsamples[i].depth > depth + 4)))
+                    if ((!(subsamples[i].flags & MATERIAL_NO_BLEED) || (flags & MATERIAL_NO_BLEED))
+                        && !((subsamples[i].ghost_depth <= depth + 4 && subsamples[i].depth > depth + 4)))
                     {
-                        if (!(subsamples[i].depth > depth + 4 || (subsamples[i].region == FRAGMENT_UNUSED && !subsamples[i].flags & MATERIAL_IS_MASK) || (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))//TODO assumes there's only one material with NO_BLEED set 
+                        if (!(subsamples[i].depth > depth + 4 || (subsamples[i].region == FRAGMENT_UNUSED && !(subsamples[i].flags & MATERIAL_IS_MASK)) || (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))
                         {
-                            color = vector3_add(color, vector3_mult(subsamples[i].color, AA_SAMPLE_WEIGHT));
+                            color = color + subsamples[i].color * AA_SAMPLE_WEIGHT;
                             weight += AA_SAMPLE_WEIGHT;
-
                             inside_samples++;
                         }
                         total_weight += AA_SAMPLE_WEIGHT;
                     }
                 }
-                color = vector3_mult(color, 1 / total_weight);
-                if (flags & MATERIAL_BACKGROUND_AA_DARK)framebuffer.fragments[x + y * framebuffer.width].color = vector3_mult(color, 0.5f + 0.5f * (weight / total_weight));
-                else framebuffer.fragments[x + y * framebuffer.width].color = color;
+                color = color * (1 / total_weight);
+                if (flags & MATERIAL_BACKGROUND_AA_DARK)
+                    framebuffer.fragments[x + y * framebuffer.width].color = color * (0.5f + 0.5f * (weight / total_weight));
+                else
+                    framebuffer.fragments[x + y * framebuffer.width].color = color;
             }
             else
             {
                 vector3_t color = vector3(0, 0, 0);
-                float weight = 0.0;
-                for (int i = 0; i < AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V; i++)
+                float weight = 0.0f;
+                for (int i = 0; i < AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V; ++i)
                 {
                     if (subsamples[i].region != FRAGMENT_UNUSED && (!(subsamples[i].flags & MATERIAL_NO_BLEED) || (flags & MATERIAL_NO_BLEED)))
                     {
-                        color = vector3_add(color, vector3_mult(subsamples[i].color, AA_SAMPLE_WEIGHT));
+                        color = color + subsamples[i].color * AA_SAMPLE_WEIGHT;
                         weight += AA_SAMPLE_WEIGHT;
                     }
                 }
-                framebuffer.fragments[x + y * framebuffer.width].color = vector3_mult(color, 1.0f / weight);
+                framebuffer.fragments[x + y * framebuffer.width].color = color * (1.0f / weight);
             }
         }
 
-    //Convert to indexed color
-    image_from_framebuffer(image, &framebuffer, &(context->palette),context->dither);
-    free(transformed_lights);
+    image_from_framebuffer(image, &framebuffer, &context->palette, context->dither);
 }
+
+} // namespace
 
 void context_render_view(context_t* context, matrix_t view, image_t* image)
 {

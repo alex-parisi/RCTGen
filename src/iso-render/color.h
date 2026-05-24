@@ -1,9 +1,10 @@
-#ifndef COLOR_H_INCLUDED
-#define COLOR_H_INCLUDED
+#pragma once
 
-typedef struct
+#include <cstdint>
+
+struct color_t
 {
-    uint8_t r, g, b;
-}color_t;
-
-#endif // COLOR_H_INCLUDED
+    std::uint8_t r;
+    std::uint8_t g;
+    std::uint8_t b;
+};

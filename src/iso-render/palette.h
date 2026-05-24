@@ -1,42 +1,35 @@
-#ifndef PALETTE_H_INCLUDED
-#define PALETTE_H_INCLUDED
-#include<stdint.h>
-#include<stdbool.h>
+#pragma once
+
+#include <array>
+#include <cstdint>
 #include "color.h"
 #include "vectormath.h"
 
-#define NUM_REGIONS 8
+inline constexpr std::size_t NUM_REGIONS = 8;
+inline constexpr std::size_t NUM_SUBREGIONS = 4;
 
-#define NUM_SUBREGIONS 4
-
-typedef struct
+struct region_t
 {
-    uint8_t subregions;
-    uint8_t start_indices[NUM_SUBREGIONS];
-    uint8_t end_indices[NUM_SUBREGIONS];
+    std::uint8_t subregions;
+    std::array<std::uint8_t, NUM_SUBREGIONS> start_indices;
+    std::array<std::uint8_t, NUM_SUBREGIONS> end_indices;
     bool remap;
-}region_t;
+};
 
-typedef struct
+struct palette_t
 {
-    uint8_t transparent_index;
-    region_t regions[NUM_REGIONS];
-    color_t colors[256];
-    color_t remap_colors[16];
-}palette_t;
+    std::uint8_t transparent_index;
+    std::array<region_t, NUM_REGIONS> regions;
+    std::array<color_t, 256> colors;
+    std::array<color_t, 16> remap_colors;
+};
 
-color_t color(uint8_t r, uint8_t g, uint8_t b);
-vector3_t vector_from_color(color_t);
-color_t color_from_vector(vector3_t vector);
+constexpr color_t color(std::uint8_t r, std::uint8_t g, std::uint8_t b) noexcept { return {r, g, b}; }
 
-//ASSUME: region<MAX_REGION
-uint8_t palette_get_nearest(palette_t* palette, uint8_t region, vector3_t color, vector3_t* error);
+vector3_t vector_from_color(color_t c);
+color_t color_from_vector(vector3_t vec);
+
+// ASSUME: region < MAX_REGION
+std::uint8_t palette_get_nearest(palette_t* palette, std::uint8_t region, vector3_t color, vector3_t* error);
 
 palette_t palette_rct2();
-
-#endif // PALETTE_H_INCLUDED
-
-
-
-
-
