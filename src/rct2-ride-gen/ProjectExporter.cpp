@@ -259,7 +259,7 @@ namespace RCTGen
             for (int i = 0; i < 3; i++)
             {
                 json_array_append_new(images_json,
-                    make_image_object("images/preview.png", 0, 0, -1, -1, -1, -1).release());
+                    makeImageObject("images/preview.png", 0, 0, -1, -1, -1, -1).release());
             }
 
             for (std::size_t i = 0; i < project.vehicles.size(); i++)
@@ -313,7 +313,7 @@ namespace RCTGen
                 for (int k = 0; k < num_images; k++)
                 {
                     json_array_append_new(images_json,
-                        make_image_object(
+                        makeImageObject(
                             image_path,
                             images[k].x_offset, images[k].y_offset,
                             x_coords[k], y_coords[k],
@@ -422,7 +422,7 @@ namespace RCTGen
         JsonRef loaded_object_json;
         if (skip_render)
         {
-            auto loaded = load_file("object/object.json");
+            auto loaded = loadFile("object/object.json");
             if (!loaded)
             {
                 return std::unexpected(std::format(

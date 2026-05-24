@@ -7,7 +7,7 @@
 
 namespace RCTGen
 {
-    JsonResult<JsonRef> load_file(const std::filesystem::path& path)
+    JsonResult<JsonRef> loadFile(const std::filesystem::path& path)
     {
         json_error_t err;
         json_t* raw = json_load_file(path.string().c_str(), 0, &err);
@@ -19,7 +19,7 @@ namespace RCTGen
         return JsonRef::adopt(raw);
     }
 
-    JsonResult<std::int64_t> read_int(json_t* value, std::string_view property)
+    JsonResult<std::int64_t> readInt(json_t* value, std::string_view property)
     {
         if (value == nullptr || !json_is_integer(value))
         {
@@ -29,14 +29,14 @@ namespace RCTGen
         return json_integer_value(value);
     }
 
-    JsonResult<std::uint32_t> read_uint32(json_t* value, std::string_view property)
+    JsonResult<std::uint32_t> readUint32(json_t* value, std::string_view property)
     {
-        auto v = read_int(value, property);
+        auto v = readInt(value, property);
         if (!v) return std::unexpected(v.error());
         return static_cast<std::uint32_t>(*v);
     }
 
-    JsonResult<std::string> read_string(json_t* value, std::string_view property)
+    JsonResult<std::string> readString(json_t* value, std::string_view property)
     {
         if (value == nullptr || !json_is_string(value))
         {
@@ -46,7 +46,7 @@ namespace RCTGen
         return std::string(json_string_value(value));
     }
 
-    JsonResult<double> read_number(json_t* value, std::string_view property)
+    JsonResult<double> readNumber(json_t* value, std::string_view property)
     {
         if (value == nullptr || !json_is_number(value))
         {
@@ -56,7 +56,7 @@ namespace RCTGen
         return json_number_value(value);
     }
 
-    JsonResult<vector3_t> read_vector3(json_t* array)
+    JsonResult<vector3_t> readVector3(json_t* array)
     {
         if (array == nullptr || !json_is_array(array) || json_array_size(array) != 3)
         {
@@ -76,7 +76,7 @@ namespace RCTGen
         return v;
     }
 
-    JsonResult<std::uint32_t> read_enum_index(
+    JsonResult<std::uint32_t> readEnumIndex(
         json_t* value,
         std::span<const std::string_view> names,
         std::string_view property,
@@ -96,7 +96,7 @@ namespace RCTGen
             "Unrecognized {} \"{}\"", item_label, tag));
     }
 
-    JsonResult<std::uint32_t> read_flag_bits(
+    JsonResult<std::uint32_t> readFlagBits(
         json_t* value,
         std::span<const std::string_view> names,
         std::string_view property,
@@ -136,7 +136,7 @@ namespace RCTGen
         return flags;
     }
 
-    JsonResult<JsonRef> as_array_or_wrap(json_t* value)
+    JsonResult<JsonRef> asArrayOrWrap(json_t* value)
     {
         if (value == nullptr)
         {
@@ -156,7 +156,7 @@ namespace RCTGen
         return JsonRef::adopt(arr);
     }
 
-    JsonRef make_image_object(
+    JsonRef makeImageObject(
         std::string_view path,
         int x, int y,
         int src_x, int src_y,

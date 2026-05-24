@@ -48,7 +48,7 @@ namespace RCTGen
             config.fill(0xFF);
 
             auto get = [&](const char* key) -> JsonResult<std::int64_t> {
-                return read_int(json_object_get(json, key), key);
+                return readInt(json_object_get(json, key), key);
             };
 
             auto def = get("default");
@@ -92,7 +92,7 @@ namespace RCTGen
                 }
                 for (std::size_t j = 0; j < json_array_size(colors_json) && j < 3; j++)
                 {
-                    auto color = read_enum_index(
+                    auto color = readEnumIndex(
                         json_array_get(colors_json, j),
                         std::span(kColorNames),
                         "default_colors",
@@ -121,7 +121,7 @@ namespace RCTGen
             json_t* parent, std::string_view key)
         {
             json_t* v = json_object_get(parent, key.data());
-            return read_string(v, key);
+            return readString(v, key);
         }
 
         [[nodiscard]] LoadResult<void> load_meshes(Project& project, json_t* meshes)
@@ -154,19 +154,19 @@ namespace RCTGen
                     "Vehicle array contains an element which is not an object"));
             }
 
-            auto spacing = read_number(json_object_get(vehicle, "spacing"), "spacing");
+            auto spacing = readNumber(json_object_get(vehicle, "spacing"), "spacing");
             if (!spacing) return std::unexpected(spacing.error());
             v.spacing = static_cast<float>(*spacing);
 
-            auto mass = read_uint32(json_object_get(vehicle, "mass"), "mass");
+            auto mass = readUint32(json_object_get(vehicle, "mass"), "mass");
             if (!mass) return std::unexpected(mass.error());
             v.mass = *mass;
 
-            auto draw_order = read_uint32(json_object_get(vehicle, "draw_order"), "draw_order");
+            auto draw_order = readUint32(json_object_get(vehicle, "draw_order"), "draw_order");
             if (!draw_order) return std::unexpected(draw_order.error());
             v.draw_order = *draw_order;
 
-            auto flags = read_flag_bits(
+            auto flags = readFlagBits(
                 json_object_get(vehicle, "flags"),
                 std::span(kVehicleFlagNames),
                 "flags", "flag");
@@ -187,7 +187,7 @@ namespace RCTGen
             json_t* riders = json_object_get(vehicle, "riders");
             if (riders != nullptr && json_is_array(riders))
             {
-                auto num_riders = read_uint32(
+                auto num_riders = readUint32(
                     json_object_get(vehicle, "capacity"), "capacity");
                 if (!num_riders) return std::unexpected(num_riders.error());
                 v.num_riders = *num_riders;
@@ -218,7 +218,7 @@ namespace RCTGen
             return std::unexpected(std::string("Property \"model\" not found"));
         }
 
-        auto arr_ref = as_array_or_wrap(json);
+        auto arr_ref = asArrayOrWrap(json);
         if (!arr_ref) return std::unexpected(arr_ref.error());
         json_t* arr = arr_ref->get();
 
@@ -238,7 +238,7 @@ namespace RCTGen
             {
                 return std::unexpected(std::string("Property \"mesh_index\" not found"));
             }
-            auto mesh_arr_ref = as_array_or_wrap(mesh);
+            auto mesh_arr_ref = asArrayOrWrap(mesh);
             if (!mesh_arr_ref) return std::unexpected(mesh_arr_ref.error());
             json_t* mesh_arr = mesh_arr_ref->get();
             const std::size_t mesh_count = json_array_size(mesh_arr);
@@ -250,7 +250,7 @@ namespace RCTGen
             }
             for (std::size_t j = 0; j < mesh_count; j++)
             {
-                auto idx = read_int(json_array_get(mesh_arr, j), "mesh_index");
+                auto idx = readInt(json_array_get(mesh_arr, j), "mesh_index");
                 if (!idx) return std::unexpected(idx.error());
                 mesh_frames[j].mesh_index = static_cast<std::int32_t>(*idx);
                 if (mesh_frames[j].mesh_index >= num_meshes || mesh_frames[j].mesh_index < -1)
@@ -282,7 +282,7 @@ namespace RCTGen
                 const std::size_t sz = json_array_size(prop);
                 if (sz == 3)
                 {
-                    auto vec = read_vector3(prop);
+                    auto vec = readVector3(prop);
                     if (!vec) return std::unexpected(vec.error());
                     for (int j = 0; j < num_frames; j++) mesh_frames[j].*field = *vec;
                 }
@@ -290,7 +290,7 @@ namespace RCTGen
                 {
                     for (int j = 0; j < num_frames; j++)
                     {
-                        auto vec = read_vector3(json_array_get(prop, j));
+                        auto vec = readVector3(json_array_get(prop, j));
                         if (!vec) return std::unexpected(vec.error());
                         mesh_frames[j].*field = *vec;
                     }
@@ -326,7 +326,7 @@ namespace RCTGen
 
             light_t out{};
 
-            auto type = read_string(json_object_get(light, "type"), "type");
+            auto type = readString(json_object_get(light, "type"), "type");
             if (!type) return std::unexpected(type.error());
             if (*type == "diffuse")       out.type = LIGHT_DIFFUSE;
             else if (*type == "specular") out.type = LIGHT_SPECULAR;
@@ -340,11 +340,11 @@ namespace RCTGen
             }
             out.shadow = json_boolean_value(shadow) ? 1 : 0;
 
-            auto dir = read_vector3(json_object_get(light, "direction"));
+            auto dir = readVector3(json_object_get(light, "direction"));
             if (!dir) return std::unexpected(dir.error());
             out.direction = vector3_normalize(*dir);
 
-            auto strength = read_number(json_object_get(light, "strength"), "strength");
+            auto strength = readNumber(json_object_get(light, "strength"), "strength");
             if (!strength) return std::unexpected(strength.error());
             out.intensity = static_cast<float>(*strength);
 
@@ -398,7 +398,7 @@ namespace RCTGen
         }
         else
         {
-            auto preview_path = read_string(preview, "preview");
+            auto preview_path = readString(preview, "preview");
             if (!preview_path) return std::unexpected(preview_path.error());
             std::FILE* file = std::fopen(preview_path->c_str(), "rb");
             if (file == nullptr || image_read_png(&project.preview, file) != 0)
@@ -416,13 +416,13 @@ namespace RCTGen
 
         if (json_t* f = json_object_get(json, "flags"))
         {
-            auto flags = read_flag_bits(f, std::span(kRideFlagNames), "flags", "flag");
+            auto flags = readFlagBits(f, std::span(kRideFlagNames), "flags", "flag");
             if (!flags) return std::unexpected(flags.error());
             project.flags = *flags;
         }
 
         {
-            auto sprite_flags = read_flag_bits(
+            auto sprite_flags = readFlagBits(
                 json_object_get(json, "sprites"),
                 std::span(kSpriteGroupNames),
                 "sprites", "sprite group");
@@ -445,7 +445,7 @@ namespace RCTGen
         }
 
         auto load_field = [&](std::uint32_t& out, const char* key) -> LoadResult<void> {
-            auto v = read_uint32(json_object_get(json, key), key);
+            auto v = readUint32(json_object_get(json, key), key);
             if (!v) return std::unexpected(v.error());
             out = *v;
             return {};
@@ -456,7 +456,7 @@ namespace RCTGen
         if (auto r = load_field(project.build_menu_priority, "build_menu_priority"); !r) return r;
 
         {
-            auto rs = read_enum_index(
+            auto rs = readEnumIndex(
                 json_object_get(json, "running_sound"),
                 std::span(kRunningSoundNames),
                 "running_sound", "running sound");
@@ -464,7 +464,7 @@ namespace RCTGen
             project.running_sound = *rs;
         }
         {
-            auto ss = read_enum_index(
+            auto ss = readEnumIndex(
                 json_object_get(json, "secondary_sound"),
                 std::span(kSecondarySoundNames),
                 "secondary_sound", "secondary sound");

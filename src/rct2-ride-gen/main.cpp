@@ -73,7 +73,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    auto project_json = load_file(cli->input_file);
+    auto project_json = loadFile(cli->input_file);
     if (!project_json)
     {
         print_msg("Error: {}", project_json.error());
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
     fs::path output_directory = ".";
     if (json_t* od = json_object_get(root, "output_directory"))
     {
-        auto od_str = read_string(od, "output_directory");
+        auto od_str = readString(od, "output_directory");
         if (!od_str)
         {
             print_msg("Error: {}", od_str.error());
