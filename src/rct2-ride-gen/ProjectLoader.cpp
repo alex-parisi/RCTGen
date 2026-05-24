@@ -3,7 +3,6 @@
 #include "ProjectLoader.hpp"
 
 #include <cassert>
-#include <cstdint>
 #include <cstdio>
 #include <format>
 #include <span>
@@ -23,22 +22,21 @@ namespace RCTGen
     {
         constexpr int kRestraintFrameCount = 4;
 
-        [[nodiscard]] LoadResult<void> load_mesh_path(mesh_t& mesh, json_t* json)
+        [[nodiscard]] LoadResult<void> loadMeshPath(mesh_t& mesh, const json_t* json)
         {
             if (!json_is_string(json))
             {
                 return std::unexpected(std::string("Mesh path is not a string"));
             }
-            const char* path = json_string_value(json);
-            if (mesh_load(&mesh, path) != 0)
+            if (const char* path = json_string_value(json); mesh_load(&mesh, path) != 0)
             {
                 return std::unexpected(std::format("Failed to load model \"{}\"", path));
             }
             return {};
         }
 
-        [[nodiscard]] LoadResult<void> load_configuration(
-            std::array<std::uint8_t, 5>& config, json_t* json)
+        [[nodiscard]] LoadResult<void> loadConfiguration(
+            std::array<std::uint8_t, 5>& config, const json_t* json)
         {
             if (json == nullptr || !json_is_object(json))
             {
@@ -52,7 +50,8 @@ namespace RCTGen
             };
 
             auto def = get("default");
-            if (!def) return std::unexpected(def.error());
+            if (!def)
+                return std::unexpected(def.error());
             config[std::to_underlying(CarIndex::defaultVal)] = static_cast<std::uint8_t>(*def);
 
             for (auto [key, idx] : std::array<std::pair<const char*, CarIndex>, 4>{{
@@ -62,8 +61,9 @@ namespace RCTGen
                 {"rear",   CarIndex::rear},
             }})
             {
-                json_t* v = json_object_get(json, key);
-                if (v == nullptr) continue;
+                const json_t* v = json_object_get(json, key);
+                if (v == nullptr)
+                    continue;
                 if (!json_is_integer(v))
                 {
                     return std::unexpected(std::format(
@@ -74,7 +74,7 @@ namespace RCTGen
             return {};
         }
 
-        [[nodiscard]] LoadResult<void> load_colors(Project& project, json_t* json)
+        [[nodiscard]] LoadResult<void> loadColors(Project& project, const json_t* json)
         {
             if (json == nullptr || !json_is_array(json))
             {
@@ -84,7 +84,7 @@ namespace RCTGen
             project.colors.assign(json_array_size(json), {});
             for (std::size_t i = 0; i < project.colors.size(); i++)
             {
-                json_t* colors_json = json_array_get(json, i);
+                const json_t* colors_json = json_array_get(json, i);
                 if (colors_json == nullptr || !json_is_array(colors_json))
                 {
                     return std::unexpected(std::string(
@@ -97,18 +97,20 @@ namespace RCTGen
                         std::span(kColorNames),
                         "default_colors",
                         "color");
-                    if (!color) return std::unexpected(color.error());
+                    if (!color)
+                        return std::unexpected(color.error());
                     project.colors[i][j] = static_cast<std::uint8_t>(*color);
                 }
             }
             return {};
         }
 
-        [[nodiscard]] LoadResult<std::string> read_optional_string(
-            json_t* parent, std::string_view key)
+        [[nodiscard]] LoadResult<std::string> readOptionalString(
+            const json_t* parent, std::string_view key)
         {
-            json_t* v = json_object_get(parent, key.data()); // key is null-terminated literal
-            if (v == nullptr) return std::string{};
+            const json_t* v = json_object_get(parent, key.data()); // key is null-terminated literal
+            if (v == nullptr)
+                return std::string{};
             if (!json_is_string(v))
             {
                 return std::unexpected(std::format(
@@ -117,14 +119,14 @@ namespace RCTGen
             return std::string(json_string_value(v));
         }
 
-        [[nodiscard]] LoadResult<std::string> read_required_string(
-            json_t* parent, std::string_view key)
+        [[nodiscard]] LoadResult<std::string> readRequiredString(
+            const json_t* parent, const std::string_view key)
         {
-            json_t* v = json_object_get(parent, key.data());
+            const json_t* v = json_object_get(parent, key.data());
             return readString(v, key);
         }
 
-        [[nodiscard]] LoadResult<void> load_meshes(Project& project, json_t* meshes)
+        [[nodiscard]] LoadResult<void> loadMeshes(Project& project, const json_t* meshes)
         {
             if (meshes == nullptr || !json_is_array(meshes))
             {
@@ -134,18 +136,19 @@ namespace RCTGen
             project.meshes.resize(json_array_size(meshes));
             for (std::size_t i = 0; i < project.meshes.size(); i++)
             {
-                json_t* mesh = json_array_get(meshes, i);
+                const json_t* mesh = json_array_get(meshes, i);
                 assert(mesh != nullptr);
-                if (auto r = load_mesh_path(project.meshes[i], mesh); !r)
+                if (auto r = loadMeshPath(project.meshes[i], mesh); !r)
                 {
-                    for (std::size_t j = 0; j < i; j++) mesh_destroy(&project.meshes[j]);
+                    for (std::size_t j = 0; j < i; j++)
+                        mesh_destroy(&project.meshes[j]);
                     return std::unexpected(r.error());
                 }
             }
             return {};
         }
 
-        [[nodiscard]] LoadResult<void> load_vehicle(
+        [[nodiscard]] LoadResult<void> loadVehicle(
             Vehicle& v, json_t* vehicle, const Project& project)
         {
             if (!json_is_object(vehicle))
@@ -155,22 +158,26 @@ namespace RCTGen
             }
 
             auto spacing = readNumber(json_object_get(vehicle, "spacing"), "spacing");
-            if (!spacing) return std::unexpected(spacing.error());
+            if (!spacing)
+                return std::unexpected(spacing.error());
             v.spacing = static_cast<float>(*spacing);
 
             auto mass = readUint32(json_object_get(vehicle, "mass"), "mass");
-            if (!mass) return std::unexpected(mass.error());
+            if (!mass)
+                return std::unexpected(mass.error());
             v.mass = *mass;
 
             auto draw_order = readUint32(json_object_get(vehicle, "draw_order"), "draw_order");
-            if (!draw_order) return std::unexpected(draw_order.error());
+            if (!draw_order)
+                return std::unexpected(draw_order.error());
             v.draw_order = *draw_order;
 
             auto flags = readFlagBits(
                 json_object_get(vehicle, "flags"),
                 std::span(kVehicleFlagNames),
                 "flags", "flag");
-            if (!flags) return std::unexpected(flags.error());
+            if (!flags)
+                return std::unexpected(flags.error());
             v.flags = *flags;
 
             const int num_frames =
@@ -178,14 +185,13 @@ namespace RCTGen
                     ? kRestraintFrameCount : 1;
             const int num_meshes_int = static_cast<int>(project.meshes.size());
 
-            if (auto r = load_model(v.model, json_object_get(vehicle, "model"),
+            if (auto r = loadModel(v.model, json_object_get(vehicle, "model"),
                                     num_meshes_int, num_frames); !r)
             {
                 return std::unexpected(r.error());
             }
 
-            json_t* riders = json_object_get(vehicle, "riders");
-            if (riders != nullptr && json_is_array(riders))
+            if (json_t* riders = json_object_get(vehicle, "riders"); riders != nullptr && json_is_array(riders))
             {
                 auto num_riders = readUint32(
                     json_object_get(vehicle, "capacity"), "capacity");
@@ -195,7 +201,7 @@ namespace RCTGen
                 v.riders.resize(json_array_size(riders));
                 for (std::size_t i = 0; i < v.riders.size(); i++)
                 {
-                    if (auto r = load_model(v.riders[i], json_array_get(riders, i),
+                    if (auto r = loadModel(v.riders[i], json_array_get(riders, i),
                                             num_meshes_int, num_frames); !r)
                     {
                         return std::unexpected(r.error());
@@ -211,7 +217,7 @@ namespace RCTGen
         }
     } // namespace
 
-    LoadResult<void> load_model(Model& model, json_t* json, int num_meshes, int num_frames)
+    LoadResult<void> loadModel(Model& model, json_t* json, int numMeshes, int numFrames)
     {
         if (json == nullptr)
         {
@@ -219,7 +225,8 @@ namespace RCTGen
         }
 
         auto arr_ref = asArrayOrWrap(json);
-        if (!arr_ref) return std::unexpected(arr_ref.error());
+        if (!arr_ref)
+            return std::unexpected(arr_ref.error());
         json_t* arr = arr_ref->get();
 
         model.meshes.resize(json_array_size(arr));
@@ -239,29 +246,31 @@ namespace RCTGen
                 return std::unexpected(std::string("Property \"mesh_index\" not found"));
             }
             auto mesh_arr_ref = asArrayOrWrap(mesh);
-            if (!mesh_arr_ref) return std::unexpected(mesh_arr_ref.error());
+            if (!mesh_arr_ref)
+                return std::unexpected(mesh_arr_ref.error());
             json_t* mesh_arr = mesh_arr_ref->get();
             const std::size_t mesh_count = json_array_size(mesh_arr);
-            if (mesh_count != 1 && mesh_count != static_cast<std::size_t>(num_frames))
+            if (mesh_count != 1 && mesh_count != static_cast<std::size_t>(numFrames))
             {
                 return std::unexpected(std::format(
                     "Number of elements in \"mesh_index\" ({}) does not match number of frames ({})",
-                    mesh_count, num_frames));
+                    mesh_count, numFrames));
             }
             for (std::size_t j = 0; j < mesh_count; j++)
             {
                 auto idx = readInt(json_array_get(mesh_arr, j), "mesh_index");
-                if (!idx) return std::unexpected(idx.error());
+                if (!idx)
+                    return std::unexpected(idx.error());
                 mesh_frames[j].mesh_index = static_cast<std::int32_t>(*idx);
-                if (mesh_frames[j].mesh_index >= num_meshes || mesh_frames[j].mesh_index < -1)
+                if (mesh_frames[j].mesh_index >= numMeshes || mesh_frames[j].mesh_index < -1)
                 {
                     return std::unexpected(std::format(
                         "Mesh index {} is out of bounds", mesh_frames[j].mesh_index));
                 }
             }
-            if (mesh_count < static_cast<std::size_t>(num_frames))
+            if (mesh_count < static_cast<std::size_t>(numFrames))
             {
-                for (int j = 0; j < num_frames; j++)
+                for (int j = 0; j < numFrames; j++)
                 {
                     mesh_frames[j].mesh_index = mesh_frames[0].mesh_index;
                 }
@@ -283,15 +292,18 @@ namespace RCTGen
                 if (sz == 3)
                 {
                     auto vec = readVector3(prop);
-                    if (!vec) return std::unexpected(vec.error());
-                    for (int j = 0; j < num_frames; j++) mesh_frames[j].*field = *vec;
+                    if (!vec)
+                        return std::unexpected(vec.error());
+                    for (int j = 0; j < numFrames; j++)
+                        mesh_frames[j].*field = *vec;
                 }
-                else if (sz == static_cast<std::size_t>(num_frames))
+                else if (sz == static_cast<std::size_t>(numFrames))
                 {
-                    for (int j = 0; j < num_frames; j++)
+                    for (int j = 0; j < numFrames; j++)
                     {
                         auto vec = readVector3(json_array_get(prop, j));
-                        if (!vec) return std::unexpected(vec.error());
+                        if (!vec)
+                            return std::unexpected(vec.error());
                         mesh_frames[j].*field = *vec;
                     }
                 }
@@ -299,14 +311,14 @@ namespace RCTGen
                 {
                     return std::unexpected(std::format(
                         "Number of elements in \"{}\" ({}) does not match number of frames ({})",
-                        key, sz, num_frames));
+                        key, sz, numFrames));
                 }
             }
         }
         return {};
     }
 
-    LoadResult<std::vector<light_t>> load_lights(json_t* json)
+    LoadResult<std::vector<light_t>> loadLights(json_t* json)
     {
         if (json == nullptr || !json_is_array(json))
         {
@@ -327,10 +339,14 @@ namespace RCTGen
             light_t out{};
 
             auto type = readString(json_object_get(light, "type"), "type");
-            if (!type) return std::unexpected(type.error());
-            if (*type == "diffuse")       out.type = LIGHT_DIFFUSE;
-            else if (*type == "specular") out.type = LIGHT_SPECULAR;
-            else return std::unexpected(std::format("Unrecognized light type \"{}\"", *type));
+            if (!type)
+                return std::unexpected(type.error());
+            if (*type == "diffuse")
+                out.type = LIGHT_DIFFUSE;
+            else if (*type == "specular")
+                out.type = LIGHT_SPECULAR;
+            else
+                return std::unexpected(std::format("Unrecognized light type \"{}\"", *type));
 
             json_t* shadow = json_object_get(light, "shadow");
             if (shadow == nullptr || !json_is_boolean(shadow))
@@ -341,11 +357,13 @@ namespace RCTGen
             out.shadow = json_boolean_value(shadow) ? 1 : 0;
 
             auto dir = readVector3(json_object_get(light, "direction"));
-            if (!dir) return std::unexpected(dir.error());
+            if (!dir)
+                return std::unexpected(dir.error());
             out.direction = vector3_normalize(*dir);
 
             auto strength = readNumber(json_object_get(light, "strength"), "strength");
-            if (!strength) return std::unexpected(strength.error());
+            if (!strength)
+                return std::unexpected(strength.error());
             out.intensity = static_cast<float>(*strength);
 
             lights.push_back(out);
@@ -353,35 +371,39 @@ namespace RCTGen
         return lights;
     }
 
-    LoadResult<void> load_project(Project& project, json_t* json)
+    LoadResult<void> loadProject(Project& project, json_t* json)
     {
-        auto id = read_required_string(json, "id");
-        if (!id) return std::unexpected(id.error());
+        auto id = readRequiredString(json, "id");
+        if (!id)
+            return std::unexpected(id.error());
         project.id = std::move(*id);
 
-        if (auto original_id = read_optional_string(json, "original_id"); original_id)
+        if (auto original_id = readOptionalString(json, "original_id"); original_id)
             project.original_id = std::move(*original_id);
         else
             return std::unexpected(original_id.error());
 
-        auto name = read_required_string(json, "name");
-        if (!name) return std::unexpected(name.error());
+        auto name = readRequiredString(json, "name");
+        if (!name)
+            return std::unexpected(name.error());
         project.name = std::move(*name);
 
-        auto desc = read_required_string(json, "description");
-        if (!desc) return std::unexpected(desc.error());
+        auto desc = readRequiredString(json, "description");
+        if (!desc)
+            return std::unexpected(desc.error());
         project.description = std::move(*desc);
 
-        auto capacity = read_required_string(json, "capacity");
-        if (!capacity) return std::unexpected(capacity.error());
+        auto capacity = readRequiredString(json, "capacity");
+        if (!capacity)
+            return std::unexpected(capacity.error());
         project.capacity = std::move(*capacity);
 
-        if (auto author = read_optional_string(json, "author"); author)
+        if (auto author = readOptionalString(json, "author"); author)
             project.author = std::move(*author);
         else
             return std::unexpected(author.error());
 
-        if (auto version = read_optional_string(json, "version"); version)
+        if (auto version = readOptionalString(json, "version"); version)
         {
             if (!version->empty()) project.version = std::move(*version);
         }
@@ -391,33 +413,36 @@ namespace RCTGen
         }
 
         // Preview image (optional).
-        json_t* preview = json_object_get(json, "preview");
-        if (preview == nullptr)
+        if (json_t* preview = json_object_get(json, "preview"); preview == nullptr)
         {
             image_new(&project.preview, 1, 1, 0, 0, 0);
         }
         else
         {
             auto preview_path = readString(preview, "preview");
-            if (!preview_path) return std::unexpected(preview_path.error());
+            if (!preview_path)
+                return std::unexpected(preview_path.error());
             std::FILE* file = std::fopen(preview_path->c_str(), "rb");
             if (file == nullptr || image_read_png(&project.preview, file) != 0)
             {
-                if (file) std::fclose(file);
+                if (file)
+                    std::fclose(file);
                 return std::unexpected(std::format(
                     "Unable to open image file {}", *preview_path));
             }
             std::fclose(file);
         }
 
-        auto ride_type = read_required_string(json, "ride_type");
-        if (!ride_type) return std::unexpected(ride_type.error());
+        auto ride_type = readRequiredString(json, "ride_type");
+        if (!ride_type)
+            return std::unexpected(ride_type.error());
         project.ride_type = std::move(*ride_type);
 
         if (json_t* f = json_object_get(json, "flags"))
         {
             auto flags = readFlagBits(f, std::span(kRideFlagNames), "flags", "flag");
-            if (!flags) return std::unexpected(flags.error());
+            if (!flags)
+                return std::unexpected(flags.error());
             project.flags = *flags;
         }
 
@@ -426,7 +451,8 @@ namespace RCTGen
                 json_object_get(json, "sprites"),
                 std::span(kSpriteGroupNames),
                 "sprites", "sprite group");
-            if (!sprite_flags) return std::unexpected(sprite_flags.error());
+            if (!sprite_flags)
+                return std::unexpected(sprite_flags.error());
             project.sprite_flags = *sprite_flags;
         }
 
@@ -451,16 +477,20 @@ namespace RCTGen
             return {};
         };
 
-        if (auto r = load_field(project.zero_cars, "zero_cars"); !r) return r;
-        if (auto r = load_field(project.tab_car, "preview_tab_car"); !r) return r;
-        if (auto r = load_field(project.build_menu_priority, "build_menu_priority"); !r) return r;
+        if (auto r = load_field(project.zero_cars, "zero_cars"); !r)
+            return r;
+        if (auto r = load_field(project.tab_car, "preview_tab_car"); !r)
+            return r;
+        if (auto r = load_field(project.build_menu_priority, "build_menu_priority"); !r)
+            return r;
 
         {
             auto rs = readEnumIndex(
                 json_object_get(json, "running_sound"),
                 std::span(kRunningSoundNames),
                 "running_sound", "running sound");
-            if (!rs) return std::unexpected(rs.error());
+            if (!rs)
+                return std::unexpected(rs.error());
             project.running_sound = *rs;
         }
         {
@@ -468,19 +498,25 @@ namespace RCTGen
                 json_object_get(json, "secondary_sound"),
                 std::span(kSecondarySoundNames),
                 "secondary_sound", "secondary sound");
-            if (!ss) return std::unexpected(ss.error());
+            if (!ss)
+                return std::unexpected(ss.error());
             project.secondary_sound = *ss;
         }
 
-        if (auto r = load_field(project.min_cars_per_train, "min_cars_per_train"); !r) return r;
-        if (auto r = load_field(project.max_cars_per_train, "max_cars_per_train"); !r) return r;
+        if (auto r = load_field(project.min_cars_per_train, "min_cars_per_train"); !r)
+            return r;
+        if (auto r = load_field(project.max_cars_per_train, "max_cars_per_train"); !r)
+            return r;
 
-        if (auto r = load_configuration(project.configuration,
-                                        json_object_get(json, "configuration")); !r) return r;
+        if (auto r = loadConfiguration(project.configuration,
+                                        json_object_get(json, "configuration")); !r)
+            return r;
 
-        if (auto r = load_colors(project, json_object_get(json, "default_colors")); !r) return r;
+        if (auto r = loadColors(project, json_object_get(json, "default_colors")); !r)
+            return r;
 
-        if (auto r = load_meshes(project, json_object_get(json, "meshes")); !r) return r;
+        if (auto r = loadMeshes(project, json_object_get(json, "meshes")); !r)
+            return r;
 
         json_t* vehicles = json_object_get(json, "vehicles");
         if (vehicles == nullptr || !json_is_array(vehicles))
@@ -493,7 +529,8 @@ namespace RCTGen
         for (std::size_t i = 0; i < project.vehicles.size(); i++)
         {
             Vehicle& v = project.vehicles[i];
-            if (auto r = load_vehicle(v, json_array_get(vehicles, i), project); !r) return r;
+            if (auto r = loadVehicle(v, json_array_get(vehicles, i), project); !r)
+                return r;
             v.num_sprites = static_cast<std::uint32_t>(countSprites(
                 static_cast<SpriteFlag>(project.sprite_flags),
                 static_cast<VehicleFlag>(v.flags)));

@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     std::vector<light_t> lights = default_lights();
     if (json_t* lights_json = json_object_get(root, "lights"))
     {
-        auto loaded = load_lights(lights_json);
+        auto loaded = loadLights(lights_json);
         if (!loaded)
         {
             printMsg("Error: {}", loaded.error());
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
     }
 
     Project project;
-    if (auto r = load_project(project, root); !r)
+    if (auto r = loadProject(project, root); !r)
     {
         printMsg("Error: {}", r.error());
         return 1;
