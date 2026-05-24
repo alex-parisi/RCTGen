@@ -1,6 +1,4 @@
 #ifdef _MSC_VER
-#pragma warning(disable : 4305)
-#pragma warning(disable : 4244)
 #define _USE_MATH_DEFINES
 #endif
 #include <stdlib.h>

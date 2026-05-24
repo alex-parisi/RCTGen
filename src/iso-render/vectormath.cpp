@@ -1,10 +1,6 @@
 #include "vectormath.h"
 #include <math.h>
 
-#ifdef _MSC_VER
-#pragma warning(disable:4244)
-#endif 
-
 vector2_t vector2(float x, float y)
 {
     vector2_t result = { x,y };

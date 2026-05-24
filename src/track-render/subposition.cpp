@@ -1,9 +1,3 @@
-#ifdef _MSC_VER
-#pragma warning(disable : 4305)
-#pragma warning(disable : 4244)
-#pragma warning(disable : 4838)
-#endif
-
 #include <assert.h>
 #include <cstdlib>
 #include <stdio.h>

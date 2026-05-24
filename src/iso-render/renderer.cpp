@@ -1,7 +1,3 @@
-#ifdef _MSC_VER
-#pragma warning(disable:4244)
-#endif
-
 #define NOMINMAX
 #define _USE_MATH_DEFINES
 #include<stdio.h>

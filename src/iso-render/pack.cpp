@@ -1,7 +1,4 @@
 #define _GNU_SOURCE
-#ifdef _MSC_VER
-#pragma warning(disable:4244)
-#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>

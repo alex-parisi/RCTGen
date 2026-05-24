@@ -1,10 +1,5 @@
 #ifdef _MSC_VER
-#pragma warning(disable:4305)
-#pragma warning(disable:4244)
-#endif
-#ifdef _MSC_VER
 #define _USE_MATH_DEFINES
-#define _CRT_SECURE_NO_WARNINGS
 #endif
 #include <string.h>
 #include <stdlib.h>

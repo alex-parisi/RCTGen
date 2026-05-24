@@ -35,11 +35,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Shared compile features/options applied to every project target.
 add_library(rctgen_common_flags INTERFACE)
-target_compile_features(rctgen_common_flags INTERFACE cxx_std_17)
-if(NOT MSVC)
-    # Legacy code relies on narrowing conversions that C++11 made ill-formed.
-    target_compile_options(rctgen_common_flags INTERFACE -Wno-c++11-narrowing)
-endif()
+target_compile_features(rctgen_common_flags INTERFACE cxx_std_23)
 
 # ---------------------------------------------------------------------------
 # Dependencies (all resolved via vcpkg by default)

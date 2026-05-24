@@ -1,6 +1,5 @@
 #ifdef _MSC_VER
 #define _USE_MATH_DEFINES
-#define _CRT_SECURE_NO_WARNINGS
 #endif
 #include "track.h"
 #include "sprites.h"
