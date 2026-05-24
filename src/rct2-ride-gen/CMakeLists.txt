@@ -1,6 +1,6 @@
 add_executable(makevehicle
-    src/main.cpp
-    src/project.cpp
+        main.cpp
+        project.cpp
 )
 target_link_libraries(makevehicle PRIVATE
     IsoRender
@@ -11,7 +11,7 @@ target_link_libraries(makevehicle PRIVATE
 # Mirror the examples directory next to the built binary.
 add_custom_command(TARGET makevehicle POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/examples"
+        "${CMAKE_SOURCE_DIR}/examples"
         "$<TARGET_FILE_DIR:makevehicle>/examples"
     VERBATIM
 )

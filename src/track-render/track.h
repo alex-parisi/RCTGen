@@ -1,8 +1,8 @@
 #pragma once
 
 #include <jansson.h>
-#include <model.h>
-#include <renderer.h>
+#include "../iso-render/model.h"
+#include "../iso-render/renderer.h"
 
 #define TILE_SIZE 3.3//3.67423461417477
 #define CLEARANCE_HEIGHT (0.20412414523*TILE_SIZE)

@@ -1,14 +1,14 @@
 add_library(IsoRender STATIC
-    src/vectormath.cpp
-    src/renderer.cpp
-    src/model.cpp
-    src/palette.cpp
-    src/raytrace.cpp
-    src/image.cpp
-    src/pack.cpp
+        vectormath.cpp
+        renderer.cpp
+        model.cpp
+        palette.cpp
+        raytrace.cpp
+        image.cpp
+        pack.cpp
 )
 
-target_include_directories(IsoRender PUBLIC src)
+target_include_directories(IsoRender PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Public deps leak through IsoRender's own headers: raytrace.h pulls embree,
 # image.h pulls libpng. Everything else is an implementation detail.
@@ -22,5 +22,5 @@ target_link_libraries(IsoRender
         assimp::assimp
 )
 
-add_executable(TestIsoRender src/main.cpp)
+add_executable(TestIsoRender main.cpp)
 target_link_libraries(TestIsoRender PRIVATE IsoRender jansson::jansson)

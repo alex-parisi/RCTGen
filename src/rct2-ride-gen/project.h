@@ -2,7 +2,7 @@
 #define PROJECT_H_INCLUDED
 
 #include<stdint.h>
-#include<renderer.h>
+#include "../iso-render/renderer.h"
 
 #define TILE_SIZE 3.3
 

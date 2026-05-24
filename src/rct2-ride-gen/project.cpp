@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <jansson.h>
 #include <zip.h>
-#include <image.h>
+#include "../iso-render/image.h"
 #include "project.h"
 
 void print_msg(const char* fmt, ...);

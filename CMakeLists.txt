@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(RCT2RideGen
+project(src/rct2-ride-gen
     VERSION 22.02
     LANGUAGES CXX
 )
@@ -59,9 +59,9 @@ add_library(jansson::jansson ALIAS PkgConfig::jansson)
 # Subprojects
 # ---------------------------------------------------------------------------
 
-add_subdirectory(libIsoRender)
-add_subdirectory(RCT2RideGen)
-add_subdirectory(TrackRender)
+add_subdirectory(src/iso-render)
+add_subdirectory(src/rct2-ride-gen)
+add_subdirectory(src/track-render)
 
 # Default startup project for Visual Studio.
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT makevehicle)
