@@ -42,10 +42,15 @@ project(RCT2RideGen
 
     find_package(ZLIB REQUIRED)
     find_package(PNG REQUIRED)
-    find_package(embree 3 REQUIRED)
+    find_package(embree 4 REQUIRED)
     find_package(assimp REQUIRED)
-    find_package(jansson REQUIRED)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(jansson REQUIRED IMPORTED_TARGET jansson)
+    add_library(jansson::jansson ALIAS PkgConfig::jansson)
     find_package(libzip REQUIRED)
+    if(NOT MSVC)
+        add_compile_options(-Wno-c++11-narrowing)
+    endif()
 
 # Target: IsoRender
 set(IsoRender_SOURCES

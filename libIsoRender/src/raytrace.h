@@ -1,6 +1,6 @@
 #ifndef RAYTRACE_H_INCLUDED
 #define RAYTRACE_H_INCLUDED
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 #include "model.h"
 #include "vectormath.h"
 

@@ -90,7 +90,7 @@ int cmp_max(const void* a, const void* b, void* arg)
     else return -1;
 }
 
-//Windows does not provide qsort_r
+//Windows does not provide qsort_r; macOS provides it with a BSD-style signature
 
 #if (defined _WIN32 || defined _WIN64 || defined __WINDOWS__)
 struct qsort_r_data
@@ -110,6 +110,25 @@ void qsort_r(void* base, size_t nel, size_t width, int (*compar)(const void* a1,
     struct qsort_r_data tmp = { arg, compar };
     qsort_s(base, nel, width, &qsort_r_arg_swap, &tmp);
 }
+#elif defined(__APPLE__)
+struct qsort_r_data
+{
+    void* arg;
+    int (*compar)(const void* a1, const void* a2, void* aarg);
+};
+
+static int qsort_r_arg_swap(void* s, const void* aa, const void* bb)
+{
+    struct qsort_r_data* ss = (struct qsort_r_data*)s;
+    return (ss->compar)(aa, bb, ss->arg);
+}
+
+static void qsort_r_gnu(void* base, size_t nel, size_t width, int (*compar)(const void* a1, const void* a2, void* aarg), void* arg)
+{
+    struct qsort_r_data tmp = { arg, compar };
+    qsort_r(base, nel, width, &tmp, &qsort_r_arg_swap);
+}
+#define qsort_r qsort_r_gnu
 #endif
 
 
