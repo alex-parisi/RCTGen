@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <assert.h>
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 #include "raytrace.h"
 
 #ifdef min
@@ -194,9 +194,6 @@ void scene_add_model(scene_t* scene, mesh_t* mesh, vertex_t(*transform)(vector3_
 
 int scene_trace_ray(scene_t* scene, vector3_t origin, vector3_t direction, ray_hit_t* hit)
 {
-    struct RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-
     struct RTCRayHit rayhit;
 
     rayhit.ray.org_x = origin.x;
@@ -212,7 +209,7 @@ int scene_trace_ray(scene_t* scene, vector3_t origin, vector3_t direction, ray_h
     rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
     rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
 
-    rtcIntersect1(scene->embree_scene, &context, &rayhit);
+    rtcIntersect1(scene->embree_scene, &rayhit);
 
     hit->ghost_distance = rayhit.ray.tfar;
 
@@ -224,7 +221,7 @@ int scene_trace_ray(scene_t* scene, vector3_t origin, vector3_t direction, ray_h
         rayhit.ray.tfar = INFINITY;
         rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
         rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
-        rtcIntersect1(scene->embree_scene, &context, &rayhit);
+        rtcIntersect1(scene->embree_scene, &rayhit);
     }
 
 
@@ -251,9 +248,6 @@ int scene_trace_ray(scene_t* scene, vector3_t origin, vector3_t direction, ray_h
 
 int scene_trace_occlusion_ray(scene_t* scene, vector3_t origin, vector3_t direction)
 {
-    struct RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-
     struct RTCRay ray;
     ray.org_x = origin.x;
     ray.org_y = origin.y;
@@ -266,7 +260,7 @@ int scene_trace_occlusion_ray(scene_t* scene, vector3_t origin, vector3_t direct
     ray.mask = -1;
     ray.flags = 0;
 
-    rtcOccluded1(scene->embree_scene, &context, &ray);
+    rtcOccluded1(scene->embree_scene, &ray);
 
     return ray.tfar <= 0.0;
 }

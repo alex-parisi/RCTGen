@@ -8,7 +8,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 #include "model.h"
 #include "renderer.h"
 
