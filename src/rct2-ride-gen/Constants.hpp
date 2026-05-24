@@ -132,7 +132,7 @@ namespace RCTGen {
         "scream1", "scream2", "scream3", "bell",
     };
 
-    inline constexpr std::array<std::uint8_t, 6> kRunningSoundValues = {
+    inline constexpr std::array kRunningSoundValues = {
         std::to_underlying(RunningSound::woodenOld),
         std::to_underlying(RunningSound::woodenModern),
         std::to_underlying(RunningSound::steel),

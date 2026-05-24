@@ -14,12 +14,13 @@
 
 namespace RCTGen {
     using LoadError = std::string;
+    using Json = json_t;
 
     template<class T>
     using LoadResult = std::expected<T, LoadError>;
 
-    [[nodiscard]] LoadResult<void> loadModel(Model &model, json_t *json, int numMeshes, int numFrames);
+    [[nodiscard]] LoadResult<void> loadModel(Model &model, Json *json, int numMeshes, int numFrames);
 
-    [[nodiscard]] LoadResult<std::vector<light_t> > loadLights(json_t * json);
-    [[nodiscard]] LoadResult<void> loadProject(Project & project, json_t * json);
+    [[nodiscard]] LoadResult<std::vector<light_t> > loadLights(Json * json);
+    [[nodiscard]] LoadResult<void> loadProject(Project & project, Json * json);
 }

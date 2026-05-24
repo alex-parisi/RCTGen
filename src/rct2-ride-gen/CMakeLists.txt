@@ -12,7 +12,6 @@ target_link_libraries(makevehicle PRIVATE
         libzip::zip
 )
 
-# Mirror the examples directory next to the built binary.
 add_custom_command(TARGET makevehicle POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_SOURCE_DIR}/examples"

@@ -11,6 +11,9 @@
 #include "model.h"
 #include "Vehicle.hpp"
 
+using Image = image_t;
+using Mesh = mesh_t;
+
 struct Project {
     std::string id;
     std::string original_id;
@@ -36,8 +39,8 @@ struct Project {
     std::uint32_t num_sprites = 0;
 
     std::vector<std::array<std::uint8_t, 3> > colors;
-    std::vector<mesh_t> meshes;
+    std::vector<Mesh> meshes;
     std::vector<Vehicle> vehicles;
 
-    image_t preview{};
+    Image preview{};
 };

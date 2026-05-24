@@ -8,13 +8,15 @@
 
 #include "vectormath.h"
 
+using Vector3 = vector3_t;
+
 struct Model {
     static constexpr std::size_t kMaxFrames = 4;
 
     struct MeshFrame {
         std::int32_t mesh_index = -1;
-        vector3_t position{};
-        vector3_t orientation{};
+        Vector3 position{};
+        Vector3 orientation{};
     };
 
     std::vector<std::array<MeshFrame, kMaxFrames> > meshes;

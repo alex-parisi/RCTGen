@@ -11,6 +11,7 @@
 
 namespace RCTGen {
     using ExportError = std::string;
+    using Context = context_t;
 
     template<class T>
     using ExportResult = std::expected<T, ExportError>;
@@ -19,7 +20,7 @@ namespace RCTGen {
     // true, reuses images from a previously generated object.json instead.
     [[nodiscard]] ExportResult<void> exportProject(
         Project &project,
-        context_t &context,
+        Context &context,
         const std::filesystem::path &outputDirectory,
         bool skipRender);
 
@@ -27,5 +28,5 @@ namespace RCTGen {
     // ./test/. Used in --test mode.
     [[nodiscard]] ExportResult<void> exportProjectTest(
         Project & project,
-        context_t & context);
+        Context & context);
 }

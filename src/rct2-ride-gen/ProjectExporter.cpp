@@ -26,6 +26,9 @@
 namespace fs = std::filesystem;
 
 namespace RCTGen {
+
+    using Context = context_t;
+
     namespace {
         // friction_sound_id table, indexed by the running_sound enum from JSON.
         // Preserves the historical mapping (which does not align name-for-name
@@ -41,7 +44,7 @@ namespace RCTGen {
         };
 
         void addModelToContext(
-            const Project &project, context_t &context, const Model &model, const int frame, const int mask) {
+            const Project &project, Context &context, const Model &model, const int frame, const int mask) {
             for (const auto &mesh_frames: model.meshes) {
                 const auto &[mesh_index, position, orientation] = mesh_frames[frame];
                 if (mesh_index == -1)
@@ -122,7 +125,7 @@ namespace RCTGen {
             if (has_flag(vf, VehicleFlag::restraintAnimation)) set("restraintAnimation", 4);
         }
 
-        JsonRef build_project_json(const Project &project) {
+        JsonRef buildProjectJson(const Project &project) {
             json_t *json = json_object();
             json_object_set_new(json, "id", json_string(project.id.c_str()));
             if (!project.original_id.empty())
@@ -157,7 +160,7 @@ namespace RCTGen {
 
             json_object_set_new(properties, "buildMenuPriority", json_integer(project.build_menu_priority));
 
-            auto rf = static_cast<RideFlag>(project.flags);
+            const auto rf = static_cast<RideFlag>(project.flags);
             if (has_flag(rf, RideFlag::noCollisionCrashes))
                 json_object_set_new(properties, "noCollisionCrashes", json_true());
             if (has_flag(rf, RideFlag::riderControlsSpeed))
@@ -167,7 +170,7 @@ namespace RCTGen {
             json_t *car_color_presets = json_array();
             for (const auto &preset: project.colors) {
                 json_t *preset_arr = json_array();
-                for (auto idx: preset) {
+                for (const auto idx: preset) {
                     json_array_append_new(preset_arr,
                                           json_string(std::string(kColorNames[idx]).c_str()));
                 }
@@ -188,7 +191,7 @@ namespace RCTGen {
                 json_object_set_new(car, "numSeats", json_integer(vehicle.num_riders));
                 json_object_set_new(car, "numSeatRows", json_integer(vehicle.riders.size()));
 
-                std::uint8_t friction = (project.running_sound < kFrictionSoundIds.size())
+                const std::uint8_t friction = (project.running_sound < kFrictionSoundIds.size())
                                             ? kFrictionSoundIds[project.running_sound]
                                             : 0u;
                 json_object_set_new(car, "frictionSoundId", json_integer(friction));
@@ -201,7 +204,7 @@ namespace RCTGen {
                                  static_cast<VehicleFlag>(vehicle.flags));
                 json_object_set_new(car, "spriteGroups", sprite_groups);
 
-                auto vf = static_cast<VehicleFlag>(vehicle.flags);
+                const auto vf = static_cast<VehicleFlag>(vehicle.flags);
                 if (has_flag(vf, VehicleFlag::secondaryRemap))
                     json_object_set_new(car, "hasAdditionalColour1", json_true());
                 if (has_flag(vf, VehicleFlag::tertiaryRemap))
@@ -210,9 +213,9 @@ namespace RCTGen {
                     json_object_set_new(car, "hasScreamingRiders", json_true());
 
                 json_t *loading_positions = json_array();
-                for (const Model &rider: vehicle.riders) {
-                    int position = static_cast<int>(std::round(
-                        32.0 * rider.meshes[0][0].position.x / kTileSize));
+                for (const auto &[meshes]: vehicle.riders) {
+                    const int position = static_cast<int>(std::round(
+                        32.0 * meshes[0][0].position.x / kTileSize));
                     if (vehicle.num_riders > 1) {
                         json_array_append_new(loading_positions, json_integer(position - 1));
                         json_array_append_new(loading_positions, json_integer(position + 1));
@@ -241,8 +244,8 @@ namespace RCTGen {
             return adoptJson(json);
         }
 
-        ExportResult<void> render_sprites(
-            Project &project, context_t &context, json_t *images_json) {
+        ExportResult<void> renderSprites(
+            Project &project, Context &context, json_t *images_json) {
             // Preview image.
             const fs::path preview_path = "object/images/preview.png";
             std::FILE *file = std::fopen(preview_path.string().c_str(), "wb");
@@ -265,7 +268,7 @@ namespace RCTGen {
                 const int num_car_images = countSprites(sf, vf);
                 const int num_images = num_car_images * (1 + static_cast<int>(vehicle.riders.size()));
 
-                std::vector<image_t> images(num_images, image_t{});
+                std::vector images(num_images, image_t{});
 
                 printMsg("Rendering car sprites");
                 int base = 0;
@@ -295,8 +298,8 @@ namespace RCTGen {
                 }
 
                 image_t atlas;
-                std::vector<int> x_coords(num_images, 0);
-                std::vector<int> y_coords(num_images, 0);
+                std::vector x_coords(num_images, 0);
+                std::vector y_coords(num_images, 0);
                 image_create_atlas(&atlas, images.data(), num_images,
                                    x_coords.data(), y_coords.data());
 
@@ -325,7 +328,7 @@ namespace RCTGen {
             return {};
         }
 
-        ExportResult<void> parkobj_add(zip_t *archive, const fs::path &archive_path) {
+        ExportResult<void> parkObjAdd(zip_t *archive, const fs::path &archive_path) {
             const fs::path src = fs::path("object") / archive_path;
             std::FILE *file = std::fopen(src.string().c_str(), "rb");
             if (file == nullptr) {
@@ -344,7 +347,7 @@ namespace RCTGen {
             return {};
         }
 
-        ExportResult<void> make_parkobj(const Project &project, const fs::path &path) {
+        ExportResult<void> makeParkObj(const Project &project, const fs::path &path) {
             int zerr = 0;
             zip_t *archive = zip_open(path.string().c_str(), ZIP_CREATE | ZIP_TRUNCATE, &zerr);
             if (archive == nullptr) {
@@ -355,16 +358,16 @@ namespace RCTGen {
                 return std::unexpected(std::string(
                     "Unable to add subdirectory \"images\" to ZIP archive"));
             }
-            if (auto r = parkobj_add(archive, "object.json"); !r) {
+            if (auto r = parkObjAdd(archive, "object.json"); !r) {
                 zip_close(archive);
                 return r;
             }
-            if (auto r = parkobj_add(archive, "images/preview.png"); !r) {
+            if (auto r = parkObjAdd(archive, "images/preview.png"); !r) {
                 zip_close(archive);
                 return r;
             }
             for (std::size_t i = 0; i < project.vehicles.size(); i++) {
-                if (auto r = parkobj_add(archive, std::format("images/car_{}.png", i)); !r) {
+                if (auto r = parkObjAdd(archive, std::format("images/car_{}.png", i)); !r) {
                     zip_close(archive);
                     return r;
                 }
@@ -375,7 +378,7 @@ namespace RCTGen {
             return {};
         }
 
-        void clean_working_dir(const Project &project) {
+        void cleanWorkingDirectory(const Project &project) {
             std::error_code ec;
             fs::remove("object/object.json", ec);
             fs::remove("object/images/preview.png", ec);
@@ -387,10 +390,10 @@ namespace RCTGen {
 
     ExportResult<void> exportProject(
         Project &project,
-        context_t &context,
+        Context &context,
         const fs::path &outputDirectory,
-        bool skipRender) {
-        JsonRef json = build_project_json(project);
+        const bool skipRender) {
+        const JsonRef json = buildProjectJson(project);
 
         json_t *images_json = nullptr;
         JsonRef loaded_object_json;
@@ -408,9 +411,9 @@ namespace RCTGen {
             // Borrow the array; json_object_set will incref it inside the new object.
             json_incref(images_json);
         } else {
-            clean_working_dir(project);
+            cleanWorkingDirectory(project);
             images_json = json_array();
-            if (auto r = render_sprites(project, context, images_json); !r) {
+            if (auto r = renderSprites(project, context, images_json); !r) {
                 json_decref(images_json);
                 return r;
             }
@@ -420,10 +423,10 @@ namespace RCTGen {
         json_dump_file(json.get(), "object/object.json", JSON_INDENT(4));
 
         const fs::path parkobj_path = outputDirectory / (project.id + ".parkobj");
-        return make_parkobj(project, parkobj_path);
+        return makeParkObj(project, parkobj_path);
     }
 
-    ExportResult<void> exportProjectTest(Project &project, context_t &context) {
+    ExportResult<void> exportProjectTest(Project &project, Context &context) {
         for (std::size_t i = 0; i < project.vehicles.size(); i++) {
             Vehicle &vehicle = project.vehicles[i];
             const auto vf = static_cast<VehicleFlag>(vehicle.flags);
