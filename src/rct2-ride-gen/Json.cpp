@@ -9,26 +9,32 @@ namespace RCTGen
 {
     namespace
     {
-        void json_deleter(json_t* p) noexcept { json_decref(p); }
+        void jsonDeleter(json_t* p) noexcept
+        {
+            json_decref(p);
+        }
     }
 
     JsonRef adoptJson(json_t* raw)
     {
-        if (raw == nullptr) return {};
-        return JsonRef(raw, &json_deleter);
+        if (raw == nullptr)
+            return {};
+        return {raw, &jsonDeleter};
     }
 
     JsonRef borrowJson(json_t* raw)
     {
-        if (raw == nullptr) return {};
+        if (raw == nullptr)
+            return {};
         json_incref(raw);
         return adoptJson(raw);
     }
 
-    json_t* releaseJson(JsonRef ref) noexcept
+    json_t* releaseJson(const JsonRef& ref) noexcept
     {
         json_t* p = ref.get();
-        if (p) json_incref(p);
+        if (p)
+            json_incref(p);
         return p;
     }
 
@@ -44,7 +50,7 @@ namespace RCTGen
         return adoptJson(raw);
     }
 
-    JsonResult<std::int64_t> readInt(json_t* value, std::string_view property)
+    JsonResult<std::int64_t> readInt(const json_t* value, std::string_view property)
     {
         if (value == nullptr || !json_is_integer(value))
         {
@@ -54,14 +60,15 @@ namespace RCTGen
         return json_integer_value(value);
     }
 
-    JsonResult<std::uint32_t> readUint32(json_t* value, std::string_view property)
+    JsonResult<std::uint32_t> readUint32(const json_t* value, const std::string_view property)
     {
         auto v = readInt(value, property);
-        if (!v) return std::unexpected(v.error());
+        if (!v)
+            return std::unexpected(v.error());
         return static_cast<std::uint32_t>(*v);
     }
 
-    JsonResult<std::string> readString(json_t* value, std::string_view property)
+    JsonResult<std::string> readString(const json_t* value, std::string_view property)
     {
         if (value == nullptr || !json_is_string(value))
         {
@@ -71,7 +78,7 @@ namespace RCTGen
         return std::string(json_string_value(value));
     }
 
-    JsonResult<double> readNumber(json_t* value, std::string_view property)
+    JsonResult<double> readNumber(const json_t* value, std::string_view property)
     {
         if (value == nullptr || !json_is_number(value))
         {
@@ -81,7 +88,7 @@ namespace RCTGen
         return json_number_value(value);
     }
 
-    JsonResult<vector3_t> readVector3(json_t* array)
+    JsonResult<vector3_t> readVector3(const json_t* array)
     {
         if (array == nullptr || !json_is_array(array) || json_array_size(array) != 3)
         {
@@ -91,7 +98,7 @@ namespace RCTGen
         float* components[3] = {&v.x, &v.y, &v.z};
         for (std::size_t i = 0; i < 3; i++)
         {
-            json_t* elem = json_array_get(array, i);
+            const json_t* elem = json_array_get(array, i);
             if (!json_is_number(elem))
             {
                 return std::unexpected(std::string("Vector components must be numeric"));
@@ -102,10 +109,10 @@ namespace RCTGen
     }
 
     JsonResult<std::uint32_t> readEnumIndex(
-        json_t* value,
-        std::span<const std::string_view> names,
+        const json_t* value,
+        const std::span<const std::string_view> names,
         std::string_view property,
-        std::string_view item_label)
+        std::string_view itemLabel)
     {
         if (value == nullptr || !json_is_string(value))
         {
@@ -115,17 +122,18 @@ namespace RCTGen
         std::string_view tag = json_string_value(value);
         for (std::size_t i = 0; i < names.size(); i++)
         {
-            if (names[i] == tag) return static_cast<std::uint32_t>(i);
+            if (names[i] == tag)
+                return static_cast<std::uint32_t>(i);
         }
         return std::unexpected(std::format(
-            "Unrecognized {} \"{}\"", item_label, tag));
+            "Unrecognized {} \"{}\"", itemLabel, tag));
     }
 
     JsonResult<std::uint32_t> readFlagBits(
-        json_t* value,
-        std::span<const std::string_view> names,
+        const json_t* value,
+        const std::span<const std::string_view> names,
         std::string_view property,
-        std::string_view item_label)
+        std::string_view itemLabel)
     {
         if (value == nullptr || !json_is_array(value))
         {
@@ -135,7 +143,7 @@ namespace RCTGen
         std::uint32_t flags = 0;
         for (std::size_t i = 0; i < json_array_size(value); i++)
         {
-            json_t* tag_json = json_array_get(value, i);
+            const json_t* tag_json = json_array_get(value, i);
             if (!json_is_string(tag_json))
             {
                 return std::unexpected(std::format(
@@ -155,7 +163,7 @@ namespace RCTGen
             if (!matched)
             {
                 return std::unexpected(std::format(
-                    "Unrecognized {} \"{}\"", item_label, tag));
+                    "Unrecognized {} \"{}\"", itemLabel, tag));
             }
         }
         return flags;
@@ -182,21 +190,25 @@ namespace RCTGen
     }
 
     JsonRef makeImageObject(
-        std::string_view path,
-        int x, int y,
-        int src_x, int src_y,
-        int src_width, int src_height)
+        const std::string_view path,
+        const int x, const int y,
+        const int srcX, const int srcY,
+        const int srcWidth, const int srcHeight)
     {
-        assert(src_width != 0 && src_height != 0);
+        assert(srcWidth != 0 && srcHeight != 0);
 
         json_t* image = json_object();
         json_object_set_new(image, "path", json_stringn(path.data(), path.size()));
         json_object_set_new(image, "x", json_integer(x));
         json_object_set_new(image, "y", json_integer(y));
-        if (src_x >= 0)     json_object_set_new(image, "srcX", json_integer(src_x));
-        if (src_y >= 0)     json_object_set_new(image, "srcY", json_integer(src_y));
-        if (src_width > 0)  json_object_set_new(image, "srcWidth", json_integer(src_width));
-        if (src_height > 0) json_object_set_new(image, "srcHeight", json_integer(src_height));
+        if (srcX >= 0)
+            json_object_set_new(image, "src_x", json_integer(srcX));
+        if (srcY >= 0)
+            json_object_set_new(image, "src_y", json_integer(srcY));
+        if (srcWidth > 0)
+            json_object_set_new(image, "src_width", json_integer(srcWidth));
+        if (srcHeight > 0)
+            json_object_set_new(image, "src_height", json_integer(srcHeight));
         json_object_set_new(image, "palette", json_string("keep"));
 
         return adoptJson(image);

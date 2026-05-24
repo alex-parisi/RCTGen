@@ -273,7 +273,7 @@ namespace RCTGen
 
                 std::vector<image_t> images(num_images, image_t{});
 
-                print_msg("Rendering car sprites");
+                printMsg("Rendering car sprites");
                 int base = 0;
                 for (int frame = 0; frame < num_frames; frame++)
                 {
@@ -286,7 +286,7 @@ namespace RCTGen
 
                 for (std::size_t j = 0; j < vehicle.riders.size(); j++)
                 {
-                    print_msg("Rendering peep sprites {}", j);
+                    printMsg("Rendering peep sprites {}", j);
                     base = 0;
                     for (int frame = 0; frame < num_frames; frame++)
                     {
@@ -464,7 +464,7 @@ namespace RCTGen
             const int num_frames = has_flag(vf, VehicleFlag::restraintAnimation) ? 4 : 1;
             for (int j = 0; j < num_frames; j++)
             {
-                print_msg("Rendering vehicle {} frame {}", i, j);
+                printMsg("Rendering vehicle {} frame {}", i, j);
                 image_t image;
                 context_begin_render(&context);
                 add_model_to_context(project, context, vehicle.model, j, 0);

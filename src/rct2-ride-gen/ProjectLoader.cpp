@@ -320,7 +320,7 @@ namespace RCTGen
             assert(light != nullptr);
             if (!json_is_object(light))
             {
-                print_msg("Warning: Light array contains an element which is not an object - ignoring");
+                printMsg("Warning: Light array contains an element which is not an object - ignoring");
                 continue;
             }
 

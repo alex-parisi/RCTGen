@@ -69,14 +69,14 @@ int main(int argc, char** argv)
     auto cli = parse_cli(std::span<char* const>(argv, static_cast<std::size_t>(argc)));
     if (!cli)
     {
-        print_msg("Error: {}", cli.error());
+        printMsg("Error: {}", cli.error());
         return 1;
     }
 
     auto project_json = loadFile(cli->input_file);
     if (!project_json)
     {
-        print_msg("Error: {}", project_json.error());
+        printMsg("Error: {}", project_json.error());
         return 1;
     }
     json_t* root = project_json->get();
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
         auto od_str = readString(od, "output_directory");
         if (!od_str)
         {
-            print_msg("Error: {}", od_str.error());
+            printMsg("Error: {}", od_str.error());
             return 1;
         }
         output_directory = *od_str;
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
         auto loaded = load_lights(lights_json);
         if (!loaded)
         {
-            print_msg("Error: {}", loaded.error());
+            printMsg("Error: {}", loaded.error());
             return 1;
         }
         lights = std::move(*loaded);
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
     Project project;
     if (auto r = load_project(project, root); !r)
     {
-        print_msg("Error: {}", r.error());
+        printMsg("Error: {}", r.error());
         return 1;
     }
 
@@ -124,13 +124,13 @@ int main(int argc, char** argv)
     if (cli->mode == Mode::Test)
     {
         auto r = export_project_test(project, context);
-        if (!r) { print_msg("Error: {}", r.error()); exit_code = 1; }
+        if (!r) { printMsg("Error: {}", r.error()); exit_code = 1; }
     }
     else
     {
         auto r = export_project(
             project, context, output_directory, cli->mode == Mode::SkipRender);
-        if (!r) { print_msg("Error: {}", r.error()); exit_code = 1; }
+        if (!r) { printMsg("Error: {}", r.error()); exit_code = 1; }
     }
 
     context_destroy(&context);

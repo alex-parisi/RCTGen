@@ -8,16 +8,16 @@
 
 namespace RCTGen
 {
-    void log_line(std::string_view message);
+    void logLine(std::string_view message);
 
     template <class... Args>
-    void print_msg(std::format_string<Args...> fmt, Args&&... args)
+    void printMsg(std::format_string<Args...> fmt, Args&&... args)
     {
-        log_line(std::format(fmt, std::forward<Args>(args)...));
+        logLine(std::format(fmt, std::forward<Args>(args)...));
     }
 
-    inline void print_msg(const std::string_view message)
+    inline void printMsg(const std::string_view message)
     {
-        log_line(message);
+        logLine(message);
     }
 }

@@ -295,7 +295,7 @@ namespace RCTGen
     {
         if (frame > 0)
         {
-            print_msg("Rendering restraint animation");
+            printMsg("Rendering restraint animation");
             render_rotation(context, kRestraintPerFrame, 0, 0, 0, out);
             return kRestraintPerFrame;
         }
@@ -305,7 +305,7 @@ namespace RCTGen
         auto emit_if = [&](SpriteFlag f, const char* msg, std::span<const Rotation> rots) {
             if (has_flag(sprite_flags, f))
             {
-                print_msg(msg);
+                printMsg(msg);
                 base += render_group(context, rots, out + base);
             }
         };
@@ -327,7 +327,7 @@ namespace RCTGen
 
         if (has_flag(sprite_flags, SpriteFlag::zeroGRoll))
         {
-            print_msg("Rendering zero G roll sprites");
+            printMsg("Rendering zero G roll sprites");
             base += render_group(context, kZeroGRollBaseRot, out + base);
             std::span<const Rotation> sb22 = has_flag(sprite_flags, SpriteFlag::diveLoop)
                 ? std::span<const Rotation>(kZeroGRollSteepBank22_8)
@@ -336,12 +336,12 @@ namespace RCTGen
         }
         if (has_flag(sprite_flags, SpriteFlag::diveLoop))
         {
-            print_msg("Rendering dive loop sprites");
+            printMsg("Rendering dive loop sprites");
             base += render_group(context, kDiveLoopRot, out + base);
         }
         if (has_flag(sprite_flags, SpriteFlag::corkscrew))
         {
-            print_msg("Rendering corkscrew sprites");
+            printMsg("Rendering corkscrew sprites");
             const auto& rots = corkscrew_rotations();
             base += render_group(context, rots, out + base);
         }

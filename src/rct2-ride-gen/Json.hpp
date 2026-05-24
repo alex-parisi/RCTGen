@@ -32,27 +32,27 @@ namespace RCTGen
 
     // Transfers an owning raw pointer back to a jansson API that consumes a
     // reference (e.g. json_array_append_new, json_object_set_new).
-    [[nodiscard]] json_t* releaseJson(JsonRef ref) noexcept;
+    [[nodiscard]] json_t* releaseJson(const JsonRef& ref) noexcept;
 
     [[nodiscard]] JsonResult<JsonRef> loadFile(const std::filesystem::path& path);
 
-    [[nodiscard]] JsonResult<std::int64_t>   readInt(json_t* value, std::string_view property);
-    [[nodiscard]] JsonResult<std::uint32_t>  readUint32(json_t* value, std::string_view property);
-    [[nodiscard]] JsonResult<std::string>    readString(json_t* value, std::string_view property);
-    [[nodiscard]] JsonResult<double>         readNumber(json_t* value, std::string_view property);
-    [[nodiscard]] JsonResult<vector3_t>      readVector3(json_t* array);
+    [[nodiscard]] JsonResult<std::int64_t>   readInt(const json_t* value, std::string_view property);
+    [[nodiscard]] JsonResult<std::uint32_t>  readUint32(const json_t* value, std::string_view property);
+    [[nodiscard]] JsonResult<std::string>    readString(const json_t* value, std::string_view property);
+    [[nodiscard]] JsonResult<double>         readNumber(const json_t* value, std::string_view property);
+    [[nodiscard]] JsonResult<vector3_t>      readVector3(const json_t* array);
 
     [[nodiscard]] JsonResult<std::uint32_t> readEnumIndex(
-        json_t* value,
+        const json_t* value,
         std::span<const std::string_view> names,
         std::string_view property,
-        std::string_view item_label);
+        std::string_view itemLabel);
 
     [[nodiscard]] JsonResult<std::uint32_t> readFlagBits(
-        json_t* value,
+        const json_t* value,
         std::span<const std::string_view> names,
         std::string_view property,
-        std::string_view item_label);
+        std::string_view itemLabel);
 
     [[nodiscard]] JsonResult<JsonRef> asArrayOrWrap(json_t* value);
 
@@ -61,6 +61,6 @@ namespace RCTGen
     [[nodiscard]] JsonRef makeImageObject(
         std::string_view path,
         int x, int y,
-        int src_x, int src_y,
-        int src_width, int src_height);
+        int srcX, int srcY,
+        int srcWidth, int srcHeight);
 }
