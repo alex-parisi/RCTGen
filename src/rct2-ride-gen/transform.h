@@ -1,26 +1,14 @@
-#ifndef TRANSFORM_H_INCLUDED
-#define TRANSFORM_H_INCLUDED
+#pragma once
 
+// Reserved for a future transform-expression evaluator. The original
+// stub did not compile and was not part of any build. Kept as a header
+// placeholder so consumers can include it when the feature is added.
 
-//+-/*
-//translate()
-//rotate_x()
-//rotate_y()
-//rotate_z()
-//rotate_euler(x,)
-//rotate_axis(x,y,z)
-
-enum opcode
-{
-
-}
-
-typedef struct
-{
-
-}transform_expression_t;
-
-
-
-#endif
-
+// Planned interface:
+//   +-/*
+//   translate()
+//   rotate_x()
+//   rotate_y()
+//   rotate_z()
+//   rotate_euler(...)
+//   rotate_axis(x, y, z)

@@ -1,24 +1,37 @@
-#ifdef _MSC_VER
 #define _USE_MATH_DEFINES
-#endif
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include <assert.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <jansson.h>
-#include <zip.h>
 #include "../iso-render/image.h"
 #include "project.h"
 
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <jansson.h>
+#include <zip.h>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#ifndef M_PI_2
+#define M_PI_2 (M_PI / 2.0)
+#endif
+#ifndef M_PI_4
+#define M_PI_4 (M_PI / 4.0)
+#endif
+#ifndef M_SQRT1_2
+#define M_SQRT1_2 0.70710678118654752440
+#endif
+
 void print_msg(const char* fmt, ...);
 
-#define MAX_PATH_LENGTH 512
+inline constexpr int MAX_PATH_LENGTH = 512;
 
-#define M_PI_8 (M_PI/8.0)
-#define M_PI_12 (M_PI/12.0)
+#define M_PI_8 (M_PI / 8.0)
+#define M_PI_12 (M_PI / 12.0)
 
 #define TILE_SLOPE (1 / sqrt(6))
 
@@ -550,7 +563,7 @@ int project_parkobj_add(project_t* project, zip_t* archive, const char* archive_
     snprintf(path, MAX_PATH_LENGTH, "object/%s", archive_path);
 
     FILE* file = fopen(path, "rb");
-    if (file == NULL)
+    if (file == nullptr)
     {
         print_msg("Error: Unable to open \"%s\"", path);
         zip_close(archive);
@@ -558,7 +571,7 @@ int project_parkobj_add(project_t* project, zip_t* archive, const char* archive_
     }
 
     zip_source_t* src = zip_source_filep(archive, file, 0, -1);
-    if (src == NULL)
+    if (src == nullptr)
     {
         print_msg("Error: zip_source_file failed");
         zip_close(archive);
@@ -594,7 +607,7 @@ json_t* project_generate_json(project_t* project)
 	if (project->original_id)json_object_set_new(json, "originalId", json_string((char*)project->original_id));
 	json_object_set_new(json, "version", json_string((char*)project->version));
 	json_t* authors = json_array();
-	if (project->author != NULL)json_array_append_new(authors, json_string((char*)project->author));
+	if (project->author != nullptr)json_array_append_new(authors, json_string((char*)project->author));
 	json_object_set_new(json, "authors", authors);
 	
 	json_object_set_new(json, "objectType", json_string("ride"));
@@ -783,14 +796,14 @@ json_t* project_render_sprites(project_t* project, context_t* context)
     FILE* file = fopen("object/images/preview.png", "wb");
     if (file)
     {
-        image_write_png(&(project->preview), NULL, file);
+        image_write_png(&(project->preview), nullptr, file);
         fclose(file);
     }
     else
     {
         print_msg("Failed to write file object/images/preview.png");
         json_decref(images_json);
-        return NULL;
+        return nullptr;
     }
     //Write preview image JSON
     for (int i = 0; i < 3; i++)
@@ -850,14 +863,14 @@ json_t* project_render_sprites(project_t* project, context_t* context)
         FILE* file = fopen(path, "wb");
         if (file)
         {
-            image_write_png(&atlas, NULL, file);
+            image_write_png(&atlas, nullptr, file);
             fclose(file);
         }
         else
         {
             print_msg("Failed to write file %s", path);
             json_decref(images_json);
-            return NULL;
+            return nullptr;
         }
         for (int i = 0; i < num_images; i++)image_destroy(images + i);
         free(images);
@@ -870,7 +883,7 @@ int project_make_parkobj(project_t* project, const char* path)
 {
     int error = 0;
     zip_t* archive = zip_open(path, ZIP_CREATE | ZIP_TRUNCATE, &error);
-    if (archive == NULL)
+    if (archive == nullptr)
     {
         print_msg("Error: Unable to create \"%s\"", path);
         zip_close(archive);
@@ -903,13 +916,13 @@ int project_export(project_t* project, context_t* context, const char* output_di
 {
     json_t* json = project_generate_json(project);
 
-    json_t* images_json = NULL;
+    json_t* images_json = nullptr;
     if (skip_render)
     {
         //Attempt to load image list from previous object.json
         json_error_t error;
         json_t* object_json = json_load_file("object/object.json", 0, &error);
-        if (object_json == NULL)
+        if (object_json == nullptr)
         {
             print_msg("Error: Unable to load object/object.json (file does not exist or is invalid)");
             return 1;
@@ -971,7 +984,7 @@ int project_export_test(project_t* project, context_t* context)
             FILE* file = fopen(path, "wb");
             if (file)
             {
-                image_write_png(&image, NULL, file);
+                image_write_png(&image, nullptr, file);
                 fclose(file);
             }
             else
