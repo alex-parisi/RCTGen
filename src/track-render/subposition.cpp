@@ -35,9 +35,9 @@ typedef struct
 	int yaw_sprite;
 	int pitch_sprite;
 	int bank_sprite;
-	float yaw;
-	float pitch;
-	float roll;
+	double yaw;
+	double pitch;
+	double roll;
 	}sprite_rotation_t;
 
 typedef struct
@@ -154,11 +154,11 @@ Bank angle reference
 const char* pitch_names[]={"flat","up12","up25","up42","up60","down12","down25","down42","down60","up75","up90","up105","up120","up135","up150","up165","inverted","down75","down90","down105","down120","down135","down150","down165","","","","","","","","","","","","","","","","","","","","","","","","","","","up8","up16","up50","down8","down16","down50"};
 const char* bank_names[]={"unbanked","left22","left45","right22","right45","left67","left90","left112","left135","left157","right67","right90","right112","right135","right157"};
 
-//float pitch_angles[]={0,FG,G,GS,S,-FG,-G,-GS,-S,SV,V,V+1*M_PI_12,V+2*M_PI_12,V+3*M_PI_12,V+4*M_PI_12,V+5*M_PI_12,V+6*M_PI_12,-SV,-V,-V-1*M_PI_12,-V-2*M_PI_12,-V-3*M_PI_12,-V-4*M_PI_12,-V-5*M_PI_12,FGD,GD,SD,-FGD,-GD,-SD};
-float pitch_angles[]={0,FG,G,GS,S,-FG,-G,-GS,-S,SV,V,-SV,-V,FGD,GD,SD,-FGD,-GD,-SD};
+//double pitch_angles[]={0,FG,G,GS,S,-FG,-G,-GS,-S,SV,V,V+1*M_PI_12,V+2*M_PI_12,V+3*M_PI_12,V+4*M_PI_12,V+5*M_PI_12,V+6*M_PI_12,-SV,-V,-V-1*M_PI_12,-V-2*M_PI_12,-V-3*M_PI_12,-V-4*M_PI_12,-V-5*M_PI_12,FGD,GD,SD,-FGD,-GD,-SD};
+double pitch_angles[]={0,FG,G,GS,S,-FG,-G,-GS,-S,SV,V,-SV,-V,FGD,GD,SD,-FGD,-GD,-SD};
 int pitch_numbers[]={0,1,2,3,4,5,6,7,8,9,10,17,18,50,51,52,53,54,55};
 
-float bank_angles[]={0,M_PI_8,M_PI_4,-M_PI_8,-M_PI_4,3*M_PI_8,4*M_PI_8,5*M_PI_8,6*M_PI_8,7*M_PI_8,-3*M_PI_8,-4*M_PI_8,-5*M_PI_8,-6*M_PI_8,-7*M_PI_8};
+double bank_angles[]={0,M_PI_8,M_PI_4,-M_PI_8,-M_PI_4,3*M_PI_8,4*M_PI_8,5*M_PI_8,6*M_PI_8,7*M_PI_8,-3*M_PI_8,-4*M_PI_8,-5*M_PI_8,-6*M_PI_8,-7*M_PI_8};
 
 
 //SPST
