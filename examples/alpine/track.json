@@ -1,0 +1,27 @@
+{
+"base_directory": "",
+"sprite_directory": "object/images/",
+"spritefile_in":  "examples/alpine/sprites_in.json",
+"spritefile_out": "examples/alpine/sprites_out.json",
+"tracks":
+    [
+        {
+        "name": "alpine",
+        "flags": ["has_lift"],
+        "sections":
+            ["flat", "turns", "gentle_slopes", "diagonals",
+             "gentle_sloped_turns", "banked_turns", "s_bends",
+             "helices", "turn_bank_transitions"],
+        "masks": "masks/default.json",
+        "length": 0.5,
+        "z_offset": 3,
+        "models":
+            {
+            "track": "examples/alpine/track.obj",
+            "mask":  "examples/alpine/mask.obj",
+            "brake": "examples/alpine/track.obj",
+            "block_brake": "examples/alpine/track.obj"
+            }
+        }
+    ]
+}

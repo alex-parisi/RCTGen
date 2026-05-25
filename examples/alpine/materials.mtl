@@ -64,3 +64,13 @@ newmtl Peep_Shoe
 Ns 10
 Kd 0.05 0.05 0.05
 Ks 0.05 0.05 0.05
+
+newmtl Track_Remap1_Edge
+Ns 5
+Kd 0.500000 0.500000 0.500000
+Ks 0.200000 0.200000 0.200000
+
+newmtl Lift_Greyscale
+Ns 5
+Kd 0.000000 0.000000 0.000000
+Ks 0.000000 0.000000 0.000000

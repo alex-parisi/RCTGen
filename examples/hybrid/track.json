@@ -1,0 +1,47 @@
+{
+"base_directory": "",
+"sprite_directory": "object/images/",
+"spritefile_in":  "examples/hybrid/sprites_in.json",
+"spritefile_out": "examples/hybrid/sprites_out.json",
+"tracks":
+    [
+        {
+        "name": "hybrid",
+        "flags": [],
+        "sections":
+            ["flat", "turns", "gentle_slopes", "steep_slopes", "vertical_slopes",
+             "large_slope_transitions", "diagonals", "sloped_turns",
+             "banked_turns", "banked_sloped_turns", "s_bends", "helices",
+             "barrel_rolls", "quarter_loops", "brakes", "boosters",
+             "launched_lifts", "turn_bank_transitions", "zero_g_rolls",
+             "large_sloped_turns", "large_banked_sloped_turns"],
+        "masks": "masks/default.json",
+        "length": 0.5,
+        "z_offset": 13,
+        "pivot": 0.116897727273,
+        "support_spacing": 0.8,
+        "models":
+            {
+            "track":       "examples/hybrid/track.obj",
+            "mask":        "examples/hybrid/mask.obj",
+            "brake":       "examples/hybrid/brake.obj",
+            "block_brake": "examples/hybrid/block_brake.obj",
+            "booster":     "examples/hybrid/booster.obj",
+            "support_bank_third":      "examples/hybrid/support_bank_third.obj",
+            "support_bank_half":       "examples/hybrid/support_bank_half.obj",
+            "support_bank_two_thirds": "examples/hybrid/support_bank_two_thirds.obj",
+            "support_bank":            "examples/hybrid/support_bank.obj",
+            "support_base":            "examples/hybrid/support_base.obj",
+            "support_vertical":            "examples/hybrid/support_vertical.obj",
+            "support_steep_to_vertical":   "examples/hybrid/support_steep_to_vertical.obj",
+            "support_vertical_to_steep":   "examples/hybrid/support_vertical_to_steep.obj",
+            "support_vertical_twist":      "examples/hybrid/support_vertical_twist.obj",
+            "support_barrel_roll":         "examples/hybrid/support_barrel_roll.obj",
+            "support_quarter_loop":        "examples/hybrid/support_quarter_loop.obj",
+            "support_corkscrew":           "examples/hybrid/support_corkscrew.obj",
+            "support_zero_g_roll":         "examples/hybrid/support_zero_g_roll.obj",
+            "support_large_zero_g_roll":   "examples/hybrid/support_large_zero_g_roll.obj"
+            }
+        }
+    ]
+}

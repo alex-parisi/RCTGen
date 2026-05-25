@@ -351,7 +351,12 @@ namespace RCTGen {
             int zerr = 0;
             zip_t *archive = zip_open(path.string().c_str(), ZIP_CREATE | ZIP_TRUNCATE, &zerr);
             if (archive == nullptr) {
-                return std::unexpected(std::format("Unable to create \"{}\"", path.string()));
+                zip_error_t ze;
+                zip_error_init_with_code(&ze, zerr);
+                std::string msg = std::format(
+                    "Unable to create \"{}\": {}", path.string(), zip_error_strerror(&ze));
+                zip_error_fini(&ze);
+                return std::unexpected(std::move(msg));
             }
             if (zip_dir_add(archive, "images", ZIP_FL_ENC_UTF_8) < 0) {
                 zip_close(archive);
