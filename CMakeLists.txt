@@ -73,5 +73,16 @@ add_subdirectory(src/iso-render)
 add_subdirectory(src/rct2-ride-gen)
 add_subdirectory(src/track-render)
 
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+# Enabled by default for top-level builds; consumers embedding this project
+# via add_subdirectory can disable with -DRCTGEN_BUILD_TESTS=OFF.
+option(RCTGEN_BUILD_TESTS "Build RCTGen unit tests" ON)
+if(RCTGEN_BUILD_TESTS AND PROJECT_IS_TOP_LEVEL)
+    enable_testing()
+    add_subdirectory(tests/unit)
+endif()
+
 # Default startup project for Visual Studio.
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT makevehicle)
