@@ -20,7 +20,12 @@ namespace fs = std::filesystem;
 using namespace RCTGen;
 
 namespace {
-    enum class Mode { Export, SkipRender, Test };
+    enum class Mode
+    {
+        export_,
+        skipRender,
+        test
+    };
 
     struct CliArgs {
         Mode mode;
@@ -32,15 +37,15 @@ namespace {
             const std::string_view flag = argv[1];
             Mode mode;
             if (flag == "--test")
-                mode = Mode::Test;
+                mode = Mode::test;
             else if (flag == "--skip-render")
-                mode = Mode::SkipRender;
+                mode = Mode::skipRender;
             else
                 return std::unexpected(std::format("Unrecognized option {}", flag));
             return CliArgs{mode, argv[2]};
         }
         if (argv.size() == 2) {
-            return CliArgs{Mode::Export, argv[1]};
+            return CliArgs{Mode::export_, argv[1]};
         }
         return std::unexpected(std::string("Usage: makevehicle [--test|--skip-render] <file>"));
     }
@@ -107,18 +112,17 @@ int main(int argc, char **argv) {
         lights.data(), static_cast<int>(lights.size()),
         1,
         palette_rct2(),
-        (cli->mode == Mode::Test) ? 0.125f * kTileSize : kTileSize);
+        (cli->mode == Mode::test) ? 0.125f * kTileSize : kTileSize);
 
     int exit_code = 0;
-    if (cli->mode == Mode::Test) {
-        auto r = exportProjectTest(project, context);
-        if (!r) {
+    if (cli->mode == Mode::test) {
+        if (auto r = exportProjectTest(project, context); !r) {
             printMsg("Error: {}", r.error());
             exit_code = 1;
         }
     } else {
         auto r = exportProject(
-            project, context, output_directory, cli->mode == Mode::SkipRender);
+            project, context, output_directory, cli->mode == Mode::skipRender);
         if (!r) {
             printMsg("Error: {}", r.error());
             exit_code = 1;

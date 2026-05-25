@@ -71,6 +71,5 @@
 	{"type":"diffuse","shadow":false,"direction":[-1,0.85,1],"strength":0.475},
 	{"type":"diffuse","shadow":false,"direction":[0.75,0.4,-1],"strength":0.6},
 	{"type":"diffuse","shadow":false,"direction":[1,0.25,0],"strength":0.5}
-	],
-"output_directory":"/home/edward/.config/OpenRCT2/object/"
+	]
 }

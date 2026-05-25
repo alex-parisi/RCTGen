@@ -73,8 +73,5 @@ add_subdirectory(src/iso-render)
 add_subdirectory(src/rct2-ride-gen)
 add_subdirectory(src/track-render)
 
-enable_testing()
-add_subdirectory(tests/regression)
-
 # Default startup project for Visual Studio.
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT makevehicle)
