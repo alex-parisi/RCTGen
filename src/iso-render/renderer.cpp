@@ -341,9 +341,15 @@ void image_from_framebuffer(image_t* image, framebuffer_t* framebuffer, palette_
 
     for (int y = bb.y_lower; y <= bb.y_upper; ++y)
     {
-        const int start = bb.x_lower;
-        const int stop  = bb.x_upper + 1;
-        const int step  = 1;
+        // Scan each row right-to-left. The original C code had a
+        // `(1 & 1) ? x_upper : x_lower` ternary that was always true, so it
+        // always scanned right-to-left; the goldens were captured with that
+        // direction. Floyd-Steinberg dither propagates error to neighbours
+        // along the scan direction (notably x+step), so reversing the loop
+        // shifts every dithered pixel and flips palette nearest-color picks.
+        const int start = bb.x_upper;
+        const int stop  = bb.x_lower - 1;
+        const int step  = -1;
 
         for (int x = start; x != stop; x += step)
         {
