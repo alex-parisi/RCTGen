@@ -17,11 +17,11 @@ FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
 add_executable(rct2_ride_gen_unit_tests
-    test_constants.cpp
-    test_json.cpp
-    test_logging.cpp
-    test_sprite_renderer.cpp
-    test_project_loader.cpp
+        rct2-ride-gen/Constants.t.cpp
+        rct2-ride-gen/Json.t.cpp
+        rct2-ride-gen/Logging.t.cpp
+        rct2-ride-gen/SpriteRenderer.t.cpp
+        rct2-ride-gen/ProjectLoader.t.cpp
 )
 target_link_libraries(rct2_ride_gen_unit_tests PRIVATE
     rct2_ride_gen_lib
