@@ -8,8 +8,8 @@
 #include <span>
 #include <utility>
 
-#include "../iso-render/image.h"
-#include "../iso-render/model.h"
+#include "image.h"
+#include "model.h"
 #include "Constants.hpp"
 #include "Json.hpp"
 #include "Logging.hpp"
@@ -17,10 +17,15 @@
 #include "Vehicle.hpp"
 
 namespace RCTGen {
+
+    using Json = json_t;
+    using Light = light_t;
+    using Mesh = mesh_t;
+
     namespace {
         constexpr int kRestraintFrameCount = 4;
 
-        [[nodiscard]] LoadResult<void> loadMeshPath(mesh_t &mesh, const json_t *json) {
+        [[nodiscard]] LoadResult<void> loadMeshPath(Mesh &mesh, const Json *json) {
             if (!json_is_string(json)) {
                 return std::unexpected(std::string("Mesh path is not a string"));
             }
@@ -31,7 +36,7 @@ namespace RCTGen {
         }
 
         [[nodiscard]] LoadResult<void> loadConfiguration(
-            std::array<std::uint8_t, 5> &config, const json_t *json) {
+            std::array<std::uint8_t, 5> &config, const Json *json) {
             if (json == nullptr || !json_is_object(json)) {
                 return std::unexpected(std::string(
                     "Property \"configuration\" not found or is not an object"));
@@ -55,7 +60,7 @@ namespace RCTGen {
                          {"rear", CarIndex::rear},
                      }
                  }) {
-                const json_t *v = json_object_get(json, key);
+                const Json *v = json_object_get(json, key);
                 if (v == nullptr)
                     continue;
                 if (!json_is_integer(v)) {
@@ -67,14 +72,14 @@ namespace RCTGen {
             return {};
         }
 
-        [[nodiscard]] LoadResult<void> loadColors(Project &project, const json_t *json) {
+        [[nodiscard]] LoadResult<void> loadColors(Project &project, const Json *json) {
             if (json == nullptr || !json_is_array(json)) {
                 return std::unexpected(std::string(
                     "Property \"default_colors\" not found or is not an array"));
             }
             project.colors.assign(json_array_size(json), {});
             for (std::size_t i = 0; i < project.colors.size(); i++) {
-                const json_t *colors_json = json_array_get(json, i);
+                const Json *colors_json = json_array_get(json, i);
                 if (colors_json == nullptr || !json_is_array(colors_json)) {
                     return std::unexpected(std::string(
                         "Property \"default_colors\" contains an element which is not an array"));
@@ -94,8 +99,8 @@ namespace RCTGen {
         }
 
         [[nodiscard]] LoadResult<std::string> readOptionalString(
-            const json_t *parent, std::string_view key) {
-            const json_t *v = json_object_get(parent, key.data()); // key is null-terminated literal
+            const Json *parent, std::string_view key) {
+            const Json *v = json_object_get(parent, key.data()); // key is null-terminated literal
             if (v == nullptr)
                 return std::string{};
             if (!json_is_string(v)) {
@@ -106,19 +111,19 @@ namespace RCTGen {
         }
 
         [[nodiscard]] LoadResult<std::string> readRequiredString(
-            const json_t *parent, const std::string_view key) {
-            const json_t *v = json_object_get(parent, key.data());
+            const Json *parent, const std::string_view key) {
+            const Json *v = json_object_get(parent, key.data());
             return readString(v, key);
         }
 
-        [[nodiscard]] LoadResult<void> loadMeshes(Project &project, const json_t *meshes) {
+        [[nodiscard]] LoadResult<void> loadMeshes(Project &project, const Json *meshes) {
             if (meshes == nullptr || !json_is_array(meshes)) {
                 return std::unexpected(std::string(
                     "Property \"meshes\" does not exist or is not an array"));
             }
             project.meshes.resize(json_array_size(meshes));
             for (std::size_t i = 0; i < project.meshes.size(); i++) {
-                const json_t *mesh = json_array_get(meshes, i);
+                const Json *mesh = json_array_get(meshes, i);
                 assert(mesh != nullptr);
                 if (auto r = loadMeshPath(project.meshes[i], mesh); !r) {
                     for (std::size_t j = 0; j < i; j++)
@@ -130,7 +135,7 @@ namespace RCTGen {
         }
 
         [[nodiscard]] LoadResult<void> loadVehicle(
-            Vehicle &v, json_t *vehicle, const Project &project) {
+            Vehicle &v, Json *vehicle, const Project &project) {
             if (!json_is_object(vehicle)) {
                 return std::unexpected(std::string(
                     "Vehicle array contains an element which is not an object"));
@@ -170,7 +175,7 @@ namespace RCTGen {
                 return std::unexpected(r.error());
             }
 
-            if (json_t *riders = json_object_get(vehicle, "riders"); riders != nullptr && json_is_array(riders)) {
+            if (Json *riders = json_object_get(vehicle, "riders"); riders != nullptr && json_is_array(riders)) {
                 auto num_riders = readUint32(
                     json_object_get(vehicle, "capacity"), "capacity");
                 if (!num_riders) return std::unexpected(num_riders.error());
@@ -191,7 +196,7 @@ namespace RCTGen {
         }
     } // namespace
 
-    LoadResult<void> loadModel(Model &model, json_t *json, int numMeshes, int numFrames) {
+    LoadResult<void> loadModel(Model &model, Json *json, int numMeshes, int numFrames) {
         if (json == nullptr) {
             return std::unexpected(std::string("Property \"model\" not found"));
         }
@@ -199,25 +204,25 @@ namespace RCTGen {
         auto arr_ref = asArrayOrWrap(json);
         if (!arr_ref)
             return std::unexpected(arr_ref.error());
-        json_t *arr = arr_ref->get();
+        Json *arr = arr_ref->get();
 
         model.meshes.resize(json_array_size(arr));
         for (std::size_t i = 0; i < model.meshes.size(); i++) {
             auto &mesh_frames = model.meshes[i];
-            json_t *elem = json_array_get(arr, i);
+            Json *elem = json_array_get(arr, i);
             if (!json_is_object(elem)) {
                 return std::unexpected(std::string("Property \"model\" is not an object"));
             }
 
             // mesh_index
-            json_t *mesh = json_object_get(elem, "mesh_index");
+            Json *mesh = json_object_get(elem, "mesh_index");
             if (mesh == nullptr) {
                 return std::unexpected(std::string("Property \"mesh_index\" not found"));
             }
             auto mesh_arr_ref = asArrayOrWrap(mesh);
             if (!mesh_arr_ref)
                 return std::unexpected(mesh_arr_ref.error());
-            json_t *mesh_arr = mesh_arr_ref->get();
+            Json *mesh_arr = mesh_arr_ref->get();
             const std::size_t mesh_count = json_array_size(mesh_arr);
             if (mesh_count != 1 && mesh_count != static_cast<std::size_t>(numFrames)) {
                 return std::unexpected(std::format(
@@ -247,7 +252,7 @@ namespace RCTGen {
                          {"orientation", &Model::MeshFrame::orientation},
                      }
                  }) {
-                json_t *prop = json_object_get(elem, key);
+                Json *prop = json_object_get(elem, key);
                 if (prop == nullptr || !json_is_array(prop)) {
                     return std::unexpected(std::format(
                         "Property \"{}\" not found or is not an array", key));
@@ -276,21 +281,21 @@ namespace RCTGen {
         return {};
     }
 
-    LoadResult<std::vector<light_t> > loadLights(json_t *json) {
+    LoadResult<std::vector<Light> > loadLights(Json *json) {
         if (json == nullptr || !json_is_array(json)) {
             return std::unexpected(std::string("\"lights\" is not an array"));
         }
-        std::vector<light_t> lights;
+        std::vector<Light> lights;
         lights.reserve(json_array_size(json));
         for (std::size_t i = 0; i < json_array_size(json); i++) {
-            json_t *light = json_array_get(json, i);
+            Json *light = json_array_get(json, i);
             assert(light != nullptr);
             if (!json_is_object(light)) {
                 printMsg("Warning: Light array contains an element which is not an object - ignoring");
                 continue;
             }
 
-            light_t out{};
+            Light out{};
 
             auto type = readString(json_object_get(light, "type"), "type");
             if (!type)
@@ -302,7 +307,7 @@ namespace RCTGen {
             else
                 return std::unexpected(std::format("Unrecognized light type \"{}\"", *type));
 
-            json_t *shadow = json_object_get(light, "shadow");
+            Json *shadow = json_object_get(light, "shadow");
             if (shadow == nullptr || !json_is_boolean(shadow)) {
                 return std::unexpected(std::string(
                     "Property \"shadow\" not found or is not a boolean"));
@@ -324,7 +329,7 @@ namespace RCTGen {
         return lights;
     }
 
-    LoadResult<void> loadProject(Project &project, json_t *json) {
+    LoadResult<void> loadProject(Project &project, Json *json) {
         auto id = readRequiredString(json, "id");
         if (!id)
             return std::unexpected(id.error());
@@ -362,7 +367,7 @@ namespace RCTGen {
         }
 
         // Preview image (optional).
-        if (json_t *preview = json_object_get(json, "preview"); preview == nullptr) {
+        if (Json *preview = json_object_get(json, "preview"); preview == nullptr) {
             image_new(&project.preview, 1, 1, 0, 0, 0);
         } else {
             auto preview_path = readString(preview, "preview");
@@ -383,7 +388,7 @@ namespace RCTGen {
             return std::unexpected(ride_type.error());
         project.ride_type = std::move(*ride_type);
 
-        if (json_t *f = json_object_get(json, "flags")) {
+        if (Json *f = json_object_get(json, "flags")) {
             auto flags = readFlagBits(f, std::span(kRideFlagNames), "flags", "flag");
             if (!flags)
                 return std::unexpected(flags.error());
@@ -461,7 +466,7 @@ namespace RCTGen {
         if (auto r = loadMeshes(project, json_object_get(json, "meshes")); !r)
             return r;
 
-        json_t *vehicles = json_object_get(json, "vehicles");
+        Json *vehicles = json_object_get(json, "vehicles");
         if (vehicles == nullptr || !json_is_array(vehicles)) {
             return std::unexpected(std::string(
                 "Property \"vehicles\" does not exist or is not an array"));

@@ -10,16 +10,20 @@
 #include "Logging.hpp"
 
 namespace RCTGen {
+
+    using Context = context_t;
+    using Image = image_t;
+
     namespace {
         using std::numbers::pi;
         using std::numbers::sqrt2;
 
         constexpr double kPi = pi;
-        constexpr double kPi_2 = pi / 2.0;
-        constexpr double kPi_4 = pi / 4.0;
-        constexpr double kPi_8 = pi / 8.0;
-        constexpr double kPi_12 = pi / 12.0;
-        constexpr double kSqrt1_2 = 1.0 / sqrt2;
+        constexpr double kPi2 = pi / 2.0;
+        constexpr double kPi4 = pi / 4.0;
+        constexpr double kPi8 = pi / 8.0;
+        constexpr double kPi12 = pi / 12.0;
+        constexpr double kSqrt12 = 1.0 / sqrt2;
 
         // Slope geometry: a track tile rises 1 unit over sqrt(6) of horizontal
         // run (so the "gentle" slope angle is atan(1/sqrt(6))).
@@ -28,16 +32,16 @@ namespace RCTGen {
         constexpr double kFlat = 0.0;
         const double kGentle = std::atan(kTileSlope);
         const double kSteep = std::atan(4.0 * kTileSlope);
-        constexpr double kVertical = kPi_2;
+        constexpr double kVertical = kPi2;
         const double kFlatGentleTransition = (kFlat + kGentle) / 2.0;
         const double kGentleSteepTransition = (kGentle + kSteep) / 2.0;
         const double kSteepVerticalTransition = (kSteep + kVertical) / 2.0;
 
-        const double kGentleDiagonal = std::atan(kTileSlope * kSqrt1_2);
-        const double kSteepDiagonal = std::atan(4.0 * kTileSlope * kSqrt1_2);
+        const double kGentleDiagonal = std::atan(kTileSlope * kSqrt12);
+        const double kSteepDiagonal = std::atan(4.0 * kTileSlope * kSqrt12);
         const double kFlatGentleTransitionDiagonal = (kFlat + kGentleDiagonal) / 2.0;
 
-        constexpr double kBank = kPi_4;
+        constexpr double kBank = kPi4;
         constexpr double kBankTransition = kBank / 2.0;
 
         // Corkscrew angle decomposition.
@@ -65,9 +69,9 @@ namespace RCTGen {
         // for the per-frame yaw step. Skipping the round-trip shifts a handful
         // of antialiased edge pixels.
         void renderRotation(
-            context_t *context, const int numFrames,
+            Context *context, const int numFrames,
             const double pitchD, const double rollD, const double yawD,
-            image_t *images) {
+            Image *images) {
             const auto pitch = static_cast<float>(pitchD);
             const auto roll = static_cast<float>(rollD);
             const auto yaw = static_cast<float>(yawD);
@@ -97,28 +101,28 @@ namespace RCTGen {
         const Rotation kVerticalSlopeRot[] = {
             {4, kSteepVerticalTransition, 0, 0}, {4, -kSteepVerticalTransition, 0, 0},
             {32, kVertical, 0, 0}, {32, -kVertical, 0, 0},
-            {4, kVertical + 1.0 * kPi_12, 0, 0}, {4, -kVertical - 1.0 * kPi_12, 0, 0},
-            {4, kVertical + 2.0 * kPi_12, 0, 0}, {4, -kVertical - 2.0 * kPi_12, 0, 0},
-            {4, kVertical + 3.0 * kPi_12, 0, 0}, {4, -kVertical - 3.0 * kPi_12, 0, 0},
-            {4, kVertical + 4.0 * kPi_12, 0, 0}, {4, -kVertical - 4.0 * kPi_12, 0, 0},
-            {4, kVertical + 5.0 * kPi_12, 0, 0}, {4, -kVertical - 5.0 * kPi_12, 0, 0},
+            {4, kVertical + 1.0 * kPi12, 0, 0}, {4, -kVertical - 1.0 * kPi12, 0, 0},
+            {4, kVertical + 2.0 * kPi12, 0, 0}, {4, -kVertical - 2.0 * kPi12, 0, 0},
+            {4, kVertical + 3.0 * kPi12, 0, 0}, {4, -kVertical - 3.0 * kPi12, 0, 0},
+            {4, kVertical + 4.0 * kPi12, 0, 0}, {4, -kVertical - 4.0 * kPi12, 0, 0},
+            {4, kVertical + 5.0 * kPi12, 0, 0}, {4, -kVertical - 5.0 * kPi12, 0, 0},
             {4, kPi, 0, 0},
         };
         const Rotation kDiagonalSlopeRot[] = {
-            {4, kFlatGentleTransitionDiagonal, 0, kPi_4}, {4, -kFlatGentleTransitionDiagonal, 0, kPi_4},
-            {4, kGentleDiagonal, 0, kPi_4}, {4, -kGentleDiagonal, 0, kPi_4},
-            {4, kSteepDiagonal, 0, kPi_4}, {4, -kSteepDiagonal, 0, kPi_4},
+            {4, kFlatGentleTransitionDiagonal, 0, kPi4}, {4, -kFlatGentleTransitionDiagonal, 0, kPi4},
+            {4, kGentleDiagonal, 0, kPi4}, {4, -kGentleDiagonal, 0, kPi4},
+            {4, kSteepDiagonal, 0, kPi4}, {4, -kSteepDiagonal, 0, kPi4},
         };
         constexpr Rotation kBankingRot[] = {
             {8, kFlat, kBankTransition, 0}, {8, kFlat, -kBankTransition, 0},
             {32, kFlat, kBank, 0}, {32, kFlat, -kBank, 0},
         };
         const Rotation kInlineTwistRot[] = {
-            {4, kFlat, 3.0 * kPi_8, 0}, {4, kFlat, -3.0 * kPi_8, 0},
-            {4, kFlat, kPi_2, 0}, {4, kFlat, -kPi_2, 0},
-            {4, kFlat, 5.0 * kPi_8, 0}, {4, kFlat, -5.0 * kPi_8, 0},
-            {4, kFlat, 3.0 * kPi_4, 0}, {4, kFlat, -3.0 * kPi_4, 0},
-            {4, kFlat, 7.0 * kPi_8, 0}, {4, kFlat, -7.0 * kPi_8, 0},
+            {4, kFlat, 3.0 * kPi8, 0}, {4, kFlat, -3.0 * kPi8, 0},
+            {4, kFlat, kPi2, 0}, {4, kFlat, -kPi2, 0},
+            {4, kFlat, 5.0 * kPi8, 0}, {4, kFlat, -5.0 * kPi8, 0},
+            {4, kFlat, 3.0 * kPi4, 0}, {4, kFlat, -3.0 * kPi4, 0},
+            {4, kFlat, 7.0 * kPi8, 0}, {4, kFlat, -7.0 * kPi8, 0},
         };
         const Rotation kSlopeBankTransitionRot[] = {
             {32, kFlatGentleTransition, kBankTransition, 0},
@@ -127,28 +131,28 @@ namespace RCTGen {
             {32, -kFlatGentleTransition, -kBankTransition, 0},
         };
         const Rotation kDiagonalBankTransitionRot[] = {
-            {4, kFlatGentleTransitionDiagonal, kBankTransition, kPi_4},
-            {4, kFlatGentleTransitionDiagonal, -kBankTransition, kPi_4},
-            {4, -kFlatGentleTransitionDiagonal, kBankTransition, kPi_4},
-            {4, -kFlatGentleTransitionDiagonal, -kBankTransition, kPi_4},
+            {4, kFlatGentleTransitionDiagonal, kBankTransition, kPi4},
+            {4, kFlatGentleTransitionDiagonal, -kBankTransition, kPi4},
+            {4, -kFlatGentleTransitionDiagonal, kBankTransition, kPi4},
+            {4, -kFlatGentleTransitionDiagonal, -kBankTransition, kPi4},
         };
         const Rotation kSlopedBankTransitionRot[] = {
             {4, kGentle, kBankTransition, 0}, {4, kGentle, -kBankTransition, 0},
             {4, -kGentle, kBankTransition, 0}, {4, -kGentle, -kBankTransition, 0},
         };
         const Rotation kDiagonalSlopedBankTransitionRot[] = {
-            {4, kFlatGentleTransitionDiagonal, kBank, kPi_4},
-            {4, kFlatGentleTransitionDiagonal, -kBank, kPi_4},
-            {4, -kFlatGentleTransitionDiagonal, kBank, kPi_4},
-            {4, -kFlatGentleTransitionDiagonal, -kBank, kPi_4},
-            {4, kGentleDiagonal, kBankTransition, kPi_4},
-            {4, kGentleDiagonal, -kBankTransition, kPi_4},
-            {4, -kGentleDiagonal, kBankTransition, kPi_4},
-            {4, -kGentleDiagonal, -kBankTransition, kPi_4},
-            {4, kGentleDiagonal, kBank, kPi_4},
-            {4, kGentleDiagonal, -kBank, kPi_4},
-            {4, -kGentleDiagonal, kBank, kPi_4},
-            {4, -kGentleDiagonal, -kBank, kPi_4},
+            {4, kFlatGentleTransitionDiagonal, kBank, kPi4},
+            {4, kFlatGentleTransitionDiagonal, -kBank, kPi4},
+            {4, -kFlatGentleTransitionDiagonal, kBank, kPi4},
+            {4, -kFlatGentleTransitionDiagonal, -kBank, kPi4},
+            {4, kGentleDiagonal, kBankTransition, kPi4},
+            {4, kGentleDiagonal, -kBankTransition, kPi4},
+            {4, -kGentleDiagonal, kBankTransition, kPi4},
+            {4, -kGentleDiagonal, -kBankTransition, kPi4},
+            {4, kGentleDiagonal, kBank, kPi4},
+            {4, kGentleDiagonal, -kBank, kPi4},
+            {4, -kGentleDiagonal, kBank, kPi4},
+            {4, -kGentleDiagonal, -kBank, kPi4},
         };
         const Rotation kSlopedBankedTurnRot[] = {
             {32, kGentle, kBank, 0}, {32, kGentle, -kBank, 0},
@@ -163,57 +167,57 @@ namespace RCTGen {
         // adopts an 8-frame variant when DiveLoop is also enabled.
         const Rotation kZeroGRollBaseRot[] = {
             // Gentle bank 67.5
-            {4, kGentle, 3.0 * kPi_8, 0}, {4, kGentle, -3.0 * kPi_8, 0},
-            {4, -kGentle, 3.0 * kPi_8, 0}, {4, -kGentle, -3.0 * kPi_8, 0},
+            {4, kGentle, 3.0 * kPi8, 0}, {4, kGentle, -3.0 * kPi8, 0},
+            {4, -kGentle, 3.0 * kPi8, 0}, {4, -kGentle, -3.0 * kPi8, 0},
             // Gentle bank 90
-            {4, kGentle, kPi_2, 0}, {4, kGentle, -kPi_2, 0},
-            {4, -kGentle, kPi_2, 0}, {4, -kGentle, -kPi_2, 0},
+            {4, kGentle, kPi2, 0}, {4, kGentle, -kPi2, 0},
+            {4, -kGentle, kPi2, 0}, {4, -kGentle, -kPi2, 0},
             // Gentle 112.5
-            {4, kGentle, 5.0 * kPi_8, 0}, {4, kGentle, -5.0 * kPi_8, 0},
-            {4, -kGentle, 5.0 * kPi_8, 0}, {4, -kGentle, -5.0 * kPi_8, 0},
+            {4, kGentle, 5.0 * kPi8, 0}, {4, kGentle, -5.0 * kPi8, 0},
+            {4, -kGentle, 5.0 * kPi8, 0}, {4, -kGentle, -5.0 * kPi8, 0},
             // Gentle bank 135
-            {4, kGentle, 3.0 * kPi_4, 0}, {4, kGentle, -3.0 * kPi_4, 0},
-            {4, -kGentle, 3.0 * kPi_4, 0}, {4, -kGentle, -3.0 * kPi_4, 0},
+            {4, kGentle, 3.0 * kPi4, 0}, {4, kGentle, -3.0 * kPi4, 0},
+            {4, -kGentle, 3.0 * kPi4, 0}, {4, -kGentle, -3.0 * kPi4, 0},
             // Gentle bank 157.5
-            {4, kGentle, 7.0 * kPi_8, 0}, {4, kGentle, -7.0 * kPi_8, 0},
-            {4, -kGentle, 7.0 * kPi_8, 0}, {4, -kGentle, -7.0 * kPi_8, 0},
+            {4, kGentle, 7.0 * kPi8, 0}, {4, kGentle, -7.0 * kPi8, 0},
+            {4, -kGentle, 7.0 * kPi8, 0}, {4, -kGentle, -7.0 * kPi8, 0},
             // Gentle-to-steep bank 22.5
-            {4, kGentleSteepTransition, kPi_8, 0}, {4, kGentleSteepTransition, -kPi_8, 0},
-            {4, -kGentleSteepTransition, kPi_8, 0}, {4, -kGentleSteepTransition, -kPi_8, 0},
+            {4, kGentleSteepTransition, kPi8, 0}, {4, kGentleSteepTransition, -kPi8, 0},
+            {4, -kGentleSteepTransition, kPi8, 0}, {4, -kGentleSteepTransition, -kPi8, 0},
             // Gentle-to-steep bank 45
-            {4, kGentleSteepTransition, 2.0 * kPi_8, 0}, {4, kGentleSteepTransition, -2.0 * kPi_8, 0},
-            {4, -kGentleSteepTransition, 2.0 * kPi_8, 0}, {4, -kGentleSteepTransition, -2.0 * kPi_8, 0},
+            {4, kGentleSteepTransition, 2.0 * kPi8, 0}, {4, kGentleSteepTransition, -2.0 * kPi8, 0},
+            {4, -kGentleSteepTransition, 2.0 * kPi8, 0}, {4, -kGentleSteepTransition, -2.0 * kPi8, 0},
             // Gentle-to-steep bank 67.5
-            {4, kGentleSteepTransition, 3.0 * kPi_8, 0}, {4, kGentleSteepTransition, -3.0 * kPi_8, 0},
-            {4, -kGentleSteepTransition, 3.0 * kPi_8, 0}, {4, -kGentleSteepTransition, -3.0 * kPi_8, 0},
+            {4, kGentleSteepTransition, 3.0 * kPi8, 0}, {4, kGentleSteepTransition, -3.0 * kPi8, 0},
+            {4, -kGentleSteepTransition, 3.0 * kPi8, 0}, {4, -kGentleSteepTransition, -3.0 * kPi8, 0},
             // Gentle-to-steep bank 90
-            {4, kGentleSteepTransition, kPi_2, 0}, {4, kGentleSteepTransition, -kPi_2, 0},
-            {4, -kGentleSteepTransition, kPi_2, 0}, {4, -kGentleSteepTransition, -kPi_2, 0},
+            {4, kGentleSteepTransition, kPi2, 0}, {4, kGentleSteepTransition, -kPi2, 0},
+            {4, -kGentleSteepTransition, kPi2, 0}, {4, -kGentleSteepTransition, -kPi2, 0},
         };
         // Steep bank 22.5 — 4 frames unless DiveLoop set, then 8 frames.
         const Rotation kZeroGRollSteepBank22_4[] = {
-            {4, kSteep, kPi_8, 0}, {4, kSteep, -kPi_8, 0},
-            {4, -kSteep, kPi_8, 0}, {4, -kSteep, -kPi_8, 0},
+            {4, kSteep, kPi8, 0}, {4, kSteep, -kPi8, 0},
+            {4, -kSteep, kPi8, 0}, {4, -kSteep, -kPi8, 0},
         };
         const Rotation kZeroGRollSteepBank22_8[] = {
-            {8, kSteep, kPi_8, 0}, {8, kSteep, -kPi_8, 0},
-            {8, -kSteep, kPi_8, 0}, {8, -kSteep, -kPi_8, 0},
+            {8, kSteep, kPi8, 0}, {8, kSteep, -kPi8, 0},
+            {8, -kSteep, kPi8, 0}, {8, -kSteep, -kPi8, 0},
         };
 
         const Rotation kDiveLoopRot[] = {
             // Steep bank 45
-            {8, kSteepDiagonal, kPi_4, kPi_8}, {8, kSteepDiagonal, -kPi_4, kPi_8},
-            {8, -kSteepDiagonal, kPi_4, kPi_8}, {8, -kSteepDiagonal, -kPi_4, kPi_8},
+            {8, kSteepDiagonal, kPi4, kPi8}, {8, kSteepDiagonal, -kPi4, kPi8},
+            {8, -kSteepDiagonal, kPi4, kPi8}, {8, -kSteepDiagonal, -kPi4, kPi8},
             // Steep bank 67.5
-            {8, kSteepDiagonal, 3.0 * kPi_8, kPi_8}, {8, kSteepDiagonal, -3.0 * kPi_8, kPi_8},
-            {8, -kSteepDiagonal, 3.0 * kPi_8, kPi_8}, {8, -kSteepDiagonal, -3.0 * kPi_8, kPi_8},
+            {8, kSteepDiagonal, 3.0 * kPi8, kPi8}, {8, kSteepDiagonal, -3.0 * kPi8, kPi8},
+            {8, -kSteepDiagonal, 3.0 * kPi8, kPi8}, {8, -kSteepDiagonal, -3.0 * kPi8, kPi8},
             // Diagonal steep bank 90
-            {8, kSteepDiagonal, kPi_2, kPi_8}, {8, kSteepDiagonal, -kPi_2, kPi_8},
-            {8, -kSteepDiagonal, kPi_2, kPi_8}, {8, -kSteepDiagonal, -kPi_2, kPi_8},
+            {8, kSteepDiagonal, kPi2, kPi8}, {8, kSteepDiagonal, -kPi2, kPi8},
+            {8, -kSteepDiagonal, kPi2, kPi8}, {8, -kSteepDiagonal, -kPi2, kPi8},
         };
 
         constexpr std::array kCorkscrewAngles = {
-            2.0 * kPi_12, 4.0 * kPi_12, kPi_2, 8.0 * kPi_12, 10.0 * kPi_12,
+            2.0 * kPi12, 4.0 * kPi12, kPi2, 8.0 * kPi12, 10.0 * kPi12,
         };
 
         // Build the corkscrew rotation table once at static init.
@@ -239,7 +243,7 @@ namespace RCTGen {
         }
 
         int renderGroup(
-            context_t *context, const std::span<const Rotation> rots, image_t *base) {
+            Context *context, const std::span<const Rotation> rots, Image *base) {
             int written = 0;
             for (const auto &[num_frames, pitch, roll, yaw]: rots) {
                 renderRotation(context, num_frames, pitch, roll, yaw, base + written);
@@ -277,7 +281,7 @@ namespace RCTGen {
     }
 
     int renderVehicleFrame(
-        context_t *context, const SpriteFlag spriteFlags, const int frame, image_t *out) {
+        Context *context, const SpriteFlag spriteFlags, const int frame, Image *out) {
         if (frame > 0) {
             printMsg("Rendering restraint animation");
             renderRotation(context, kRestraintPerFrame, 0, 0, 0, out);

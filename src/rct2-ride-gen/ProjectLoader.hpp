@@ -8,7 +8,7 @@
 
 #include <jansson.h>
 
-#include "../iso-render/renderer.h"
+#include "renderer.h"
 #include "Model.hpp"
 #include "Project.hpp"
 
@@ -21,6 +21,7 @@ namespace RCTGen {
 
     [[nodiscard]] LoadResult<void> loadModel(Model &model, Json *json, int numMeshes, int numFrames);
 
-    [[nodiscard]] LoadResult<std::vector<light_t> > loadLights(Json * json);
-    [[nodiscard]] LoadResult<void> loadProject(Project & project, Json * json);
+    [[nodiscard]] LoadResult<std::vector<light_t> > loadLights(Json *json);
+
+    [[nodiscard]] LoadResult<void> loadProject(Project &project, Json *json);
 }

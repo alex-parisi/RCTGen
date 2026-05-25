@@ -7,8 +7,8 @@
 
 #include <jansson.h>
 
-#include "../iso-render/renderer.h"
-#include "../iso-render/vectormath.h"
+#include "renderer.h"
+#include "vectormath.h"
 #include "Constants.hpp"
 #include "Json.hpp"
 #include "Logging.hpp"
@@ -27,13 +27,16 @@ namespace {
         fs::path input_file;
     };
 
-    std::expected<CliArgs, std::string> parse_cli(std::span<char * const> argv) {
+    std::expected<CliArgs, std::string> parse_cli(const std::span<char * const> argv) {
         if (argv.size() == 3) {
             const std::string_view flag = argv[1];
             Mode mode;
-            if (flag == "--test") mode = Mode::Test;
-            else if (flag == "--skip-render") mode = Mode::SkipRender;
-            else return std::unexpected(std::format("Unrecognized option {}", flag));
+            if (flag == "--test")
+                mode = Mode::Test;
+            else if (flag == "--skip-render")
+                mode = Mode::SkipRender;
+            else
+                return std::unexpected(std::format("Unrecognized option {}", flag));
             return CliArgs{mode, argv[2]};
         }
         if (argv.size() == 2) {
