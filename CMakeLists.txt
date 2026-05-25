@@ -1,5 +1,19 @@
 cmake_minimum_required(VERSION 3.25)
 
+# Auto-detect vcpkg without requiring the toolchain to be passed via preset or
+# -D on every invocation. If VCPKG_ROOT is set in the environment to a real
+# directory and the user hasn't already selected a toolchain (e.g. via
+# -DCMAKE_TOOLCHAIN_FILE=...), point CMake at vcpkg's toolchain. Has to
+# happen before project() to take effect during system/compiler detection.
+# Builds with brew/apt-installed system deps just skip this block and rely
+# on find_package finding them directly. We test STREQUAL "" rather than
+# DEFINED because some IDE environments (CLion) export VCPKG_ROOT as the
+# empty string when no vcpkg is configured.
+if(NOT "$ENV{VCPKG_ROOT}" STREQUAL "" AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        CACHE FILEPATH "vcpkg toolchain (auto-detected from VCPKG_ROOT)")
+endif()
+
 project(src/rct2-ride-gen
     VERSION 22.02
     LANGUAGES CXX

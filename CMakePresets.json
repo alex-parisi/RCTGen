@@ -10,14 +10,11 @@
             "name": "base",
             "hidden": true,
             "binaryDir": "${sourceDir}/build/${presetName}",
-            "generator": "Ninja",
-            "cacheVariables": {
-                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-            }
+            "generator": "Ninja"
         },
         {
             "name": "debug",
-            "displayName": "Debug (Ninja + vcpkg)",
+            "displayName": "Debug (Ninja)",
             "inherits": "base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
@@ -25,7 +22,7 @@
         },
         {
             "name": "release",
-            "displayName": "Release (Ninja + vcpkg)",
+            "displayName": "Release (Ninja)",
             "inherits": "base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
@@ -33,12 +30,9 @@
         },
         {
             "name": "vs",
-            "displayName": "Visual Studio 2022 (vcpkg)",
+            "displayName": "Visual Studio 2022",
             "binaryDir": "${sourceDir}/build/${presetName}",
-            "generator": "Visual Studio 17 2022",
-            "cacheVariables": {
-                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-            }
+            "generator": "Visual Studio 17 2022"
         }
     ],
     "buildPresets": [
