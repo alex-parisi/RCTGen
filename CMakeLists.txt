@@ -70,6 +70,7 @@ add_library(jansson::jansson ALIAS PkgConfig::jansson)
 # ---------------------------------------------------------------------------
 
 add_subdirectory(src/iso-render)
+add_subdirectory(src/util)
 add_subdirectory(src/rct2-ride-gen)
 add_subdirectory(src/track-render)
 

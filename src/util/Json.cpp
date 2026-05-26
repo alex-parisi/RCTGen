@@ -6,8 +6,6 @@
 #include <format>
 
 namespace RCTGen {
-    using Json = json_t;
-
     namespace {
         void jsonDeleter(Json *p) noexcept {
             json_decref(p);
@@ -44,6 +42,10 @@ namespace RCTGen {
         return adoptJson(raw);
     }
 
+    int dumpFile(const Json *json, const std::filesystem::path &path, std::size_t flags) {
+        return json_dump_file(json, path.string().c_str(), flags);
+    }
+
     JsonResult<std::int64_t> readInt(const Json *value, std::string_view property) {
         if (value == nullptr || !json_is_integer(value)) {
             return std::unexpected(std::format(
@@ -57,6 +59,14 @@ namespace RCTGen {
         if (!v)
             return std::unexpected(v.error());
         return static_cast<std::uint32_t>(*v);
+    }
+
+    JsonResult<bool> readBool(const Json *value, std::string_view property) {
+        if (value == nullptr || !json_is_boolean(value)) {
+            return std::unexpected(std::format(
+                "Property \"{}\" not found or is not a boolean", property));
+        }
+        return json_boolean_value(value) != 0;
     }
 
     JsonResult<std::string> readString(const Json *value, std::string_view property) {

@@ -1,6 +1,4 @@
 add_library(rct2_ride_gen_lib STATIC
-        Logging.cpp
-        Json.cpp
         ProjectLoader.cpp
         SpriteRenderer.cpp
         ProjectExporter.cpp
@@ -8,6 +6,7 @@ add_library(rct2_ride_gen_lib STATIC
 target_include_directories(rct2_ride_gen_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(rct2_ride_gen_lib PUBLIC
         rctgen_common_flags
+        RctgenUtil
         # libzip must come before IsoRender on the link line: assimp (a transitive
         # dep of IsoRender) ships its own zip_open / zip_close symbols from a
         # bundled kuba--/zip library with an incompatible signature. With assimp

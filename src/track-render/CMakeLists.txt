@@ -1,13 +1,12 @@
 # Sources shared between maketrack and subposition; compiled once.
 add_library(TrackCommon OBJECT
-        Json.cpp
-        Logging.cpp
         Sprites.cpp
         TrackSections.cpp
 )
 target_include_directories(TrackCommon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(TrackCommon PUBLIC
         rctgen_common_flags
+        RctgenUtil
         IsoRender
         jansson::jansson
 )
