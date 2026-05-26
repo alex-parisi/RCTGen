@@ -153,15 +153,20 @@ namespace RCTGen {
 
         int pack_rects_fixed(Image *images, int num_images, int width, int height, int *x_coords, int *y_coords) {
             if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords,
-                                                 &legacy_compare<project_area>)) return 1;
+                                                 &legacy_compare<project_area>))
+                return 1;
             if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords,
-                                                 &legacy_compare<project_perimeter>)) return 1;
+                                                 &legacy_compare<project_perimeter>))
+                return 1;
             if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords,
-                                                 &legacy_compare<project_max_dim>)) return 1;
+                                                 &legacy_compare<project_max_dim>))
+                return 1;
             if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords,
-                                                 &legacy_compare<project_width>)) return 1;
+                                                 &legacy_compare<project_width>))
+                return 1;
             if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords,
-                                                 &legacy_compare<project_height>)) return 1;
+                                                 &legacy_compare<project_height>))
+                return 1;
             return 0;
         }
 

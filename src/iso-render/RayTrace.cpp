@@ -104,7 +104,10 @@ namespace RCTGen {
     }
 
     void scene_add_model(Scene * scene, Mesh * mesh, Vertex(*transform)(Vector3, Vector3, bool, void*), void*data,
- int flags) {
+ 
+    int flags
+    )
+ {
         //Add mesh to list of meshes
         assert(scene->num_meshes < kMaxMeshes);
         scene->meshes[scene->num_meshes] = mesh;

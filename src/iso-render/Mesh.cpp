@@ -63,7 +63,8 @@ namespace RCTGen {
 
         // These color_type don't have an alpha channel then fill it with 0xff
         if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY || color_type ==
-            PNG_COLOR_TYPE_PALETTE)png_set_filler(png, 0xFF, PNG_FILLER_AFTER);
+            PNG_COLOR_TYPE_PALETTE)
+            png_set_filler(png, 0xFF, PNG_FILLER_AFTER);
         if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)png_set_gray_to_rgb(png);
 
         png_read_update_info(png, info);
@@ -248,7 +249,7 @@ namespace RCTGen {
             output->num_vertices += scene->mMeshes[j]->mNumVertices;
         }
 
-        printf("Loading model with %d vertices and %d faces\n", output->num_vertices, output->num_faces);
+        printf("Loading model with %zu vertices and %zu faces\n", output->num_vertices, output->num_faces);
 
         //TODO detect if UVs are not used and do not load them
         output->vertices = (Vector3 *) malloc(output->num_vertices * sizeof(Vector3));
@@ -277,8 +278,9 @@ namespace RCTGen {
                 if (mesh->mFaces[i].mNumIndices < 3)continue;
                 assert(mesh->mFaces[i].mNumIndices == 3);
                 output->faces[mesh_start_face].material = mesh->mMaterialIndex;
-                for (uint32_t j = 0; j < 3; j++)output->faces[mesh_start_face].indices[j] =
-                                                mesh_start_vertex + mesh->mFaces[i].mIndices[j];
+                for (uint32_t j = 0; j < 3; j++)
+                    output->faces[mesh_start_face].indices[j] =
+                            mesh_start_vertex + mesh->mFaces[i].mIndices[j];
                 mesh_start_face++;
             }
             mesh_start_vertex += mesh->mNumVertices;

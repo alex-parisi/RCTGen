@@ -257,8 +257,9 @@ namespace RCTGen {
             }
 
             json_t *items = json_object_get(json, "items");
-            if (items == nullptr || !json_is_array(items)) print_msg(
-                "Error: Property \"items\" does not exist or is not an array");
+            if (items == nullptr || !json_is_array(items))
+                print_msg(
+                    "Error: Property \"items\" does not exist or is not an array");
             project->num_items = json_array_size(items);
 
             for (std::uint32_t i = 0; i < project->num_items; ++i) {
@@ -280,7 +281,8 @@ namespace RCTGen {
                 if (load_int(&project->items[i].frames, json_object_get(item, "frames"), "frames")) return 1;
 
                 if (load_model(&project->items[i].model, json_object_get(item, "model"), project->num_meshes,
-                               project->items[i].frames)) return 1;
+                               project->items[i].frames))
+                    return 1;
             }
             return 0;
         }

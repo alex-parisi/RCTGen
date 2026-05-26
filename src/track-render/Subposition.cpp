@@ -2951,7 +2951,7 @@ printf("Skip finish %d %d\n",(((finish_angle&0xFE)+2*view)%8==2)||(((finish_angl
             if (i % 5 == 0) {
                 printf("    ");
             }
-            printf("{% 7d,% 5d,% 5d,% 3d, % 8s, % 8s },", points[i].x, points[i].y, points[i].z, points[i].yaw_sprite,
+            printf("{% 7d,% 5d,% 5d,% 3d, %8s, %8s },", points[i].x, points[i].y, points[i].z, points[i].yaw_sprite,
                    pitch_names[points[i].pitch_sprite], bank_names[points[i].bank_sprite]);
             if (i % 5 == 4)putchar('\n');
         }
@@ -3078,9 +3078,9 @@ printf("Skip finish %d %d\n",(((finish_angle&0xFE)+2*view)%8==2)||(((finish_angl
 
         printf("%s:\n", name);
         printf("Energy (height units)\tTrue\tActual\tDiff\tError\n");
-        printf("Energy (height units)\t%.2f\t%.2f\t%.2f\t%.1f%\n", correct_energy, actual_energy,
+        printf("Energy (height units)\t%.2f\t%.2f\t%.2f\t%.1f%%\n", correct_energy, actual_energy,
                actual_energy - correct_energy, 100 * (actual_energy / correct_energy - 1));
-        printf("Length (tiles)\t\t%.3f\t%.3f\t%.3f\t%.1f%\n\n", correct_length, actual_length,
+        printf("Length (tiles)\t\t%.3f\t%.3f\t%.3f\t%.1f%%\n\n", correct_length, actual_length,
                actual_length - correct_length, 100 * (actual_length / correct_length - 1));
     }
 

@@ -50,6 +50,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Shared compile features/options applied to every project target.
 add_library(rctgen_common_flags INTERFACE)
 target_compile_features(rctgen_common_flags INTERFACE cxx_std_23)
+target_compile_options(rctgen_common_flags INTERFACE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-Wpedantic>
+)
 
 # ---------------------------------------------------------------------------
 # Dependencies (all resolved via vcpkg by default)

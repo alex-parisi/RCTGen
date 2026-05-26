@@ -318,7 +318,8 @@ namespace RCTGen {
                 int dst_y = y_offset + y;
 
                 if (src->pixels[y * src->width + x] && dst_x >= 0 && dst_y >= 0 && dst_x < dst->width && dst_y < dst->
-                    height)dst->pixels[dst_y * dst->width + dst_x] = src->pixels[y * src->width + x];
+                    height)
+                    dst->pixels[dst_y * dst->width + dst_x] = src->pixels[y * src->width + x];
             }
     }
 

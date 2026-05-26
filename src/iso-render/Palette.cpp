@@ -67,12 +67,13 @@ namespace RCTGen {
             }
         }
 
-        if (error != NULL && palette->regions[region].remap)*error = vector3_sub(
-                                                                vector3(vector3_get_luma(target), 0.0, 0.0),
-                                                                vector3(vector3_get_luma(
-                                                                            vector_from_color(
-                                                                                palette->colors[nearest_index])), 0.0,
-                                                                        0.0));
+        if (error != NULL && palette->regions[region].remap)
+            *error = vector3_sub(
+                vector3(vector3_get_luma(target), 0.0, 0.0),
+                vector3(vector3_get_luma(
+                            vector_from_color(
+                                palette->colors[nearest_index])), 0.0,
+                        0.0));
         else if (error != NULL) *error = vector3_sub(target, vector_from_color(palette->colors[nearest_index]));
         return nearest_index;
     }

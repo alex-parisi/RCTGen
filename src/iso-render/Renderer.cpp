@@ -215,11 +215,13 @@ namespace RCTGen {
 
             Vector3 normal = hit.normal;
             Vector3 tangent;
-            if (fabs(normal.x) > fabs(normal.y)) tangent = vector3_mult(vector3(normal.z, 0, -normal.x),
-                                                                        1.0f / sqrt(
-                                                                            normal.x * normal.x + normal.z * normal.z));
-            else tangent = vector3_mult(vector3(0, -normal.z, normal.y),
-                                        1.0f / sqrt(normal.y * normal.y + normal.z * normal.z));
+            if (fabs(normal.x) > fabs(normal.y))
+                tangent = vector3_mult(vector3(normal.z, 0, -normal.x),
+                                       1.0f / sqrt(
+                                           normal.x * normal.x + normal.z * normal.z));
+            else
+                tangent = vector3_mult(vector3(0, -normal.z, normal.y),
+                                       1.0f / sqrt(normal.y * normal.y + normal.z * normal.z));
             Vector3 bitangent = vector3_cross(normal, tangent);
 
             float ao_factor = 1.0f;
@@ -486,8 +488,10 @@ namespace RCTGen {
                     int inside_samples = 0;
                     for (int i = 0; i < AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V; i++) {
                         if (!(subsamples[i].depth > min_depth + 4 || (
-                                  subsamples[i].region == kFragmentUnused && !subsamples[i].flags & MATERIAL_IS_MASK) ||
-                              (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))inside_samples++;
+                                  subsamples[i].region == kFragmentUnused && (!subsamples[i].flags) & MATERIAL_IS_MASK)
+                              ||
+                              (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))
+                            inside_samples++;
                     }
                     //If more than three samples found, use the forwardmost point
                     if (inside_samples > 3) {
@@ -512,8 +516,8 @@ namespace RCTGen {
                         if ((!(subsamples[i].flags & MATERIAL_NO_BLEED) || (flags & MATERIAL_NO_BLEED)) && !((
                                 subsamples[i].ghost_depth <= depth + 4 && subsamples[i].depth > depth + 4))) {
                             if (!(subsamples[i].depth > depth + 4 || (
-                                      subsamples[i].region == kFragmentUnused && !subsamples[i].flags &
-                                      MATERIAL_IS_MASK) || (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))
+                                      subsamples[i].region == kFragmentUnused && (!subsamples[i].flags) &
+                                          MATERIAL_IS_MASK) || (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))
                             //TODO assumes there's only one material with NO_BLEED set 
                             {
                                 color = vector3_add(color, vector3_mult(subsamples[i].color, AA_SAMPLE_WEIGHT));
