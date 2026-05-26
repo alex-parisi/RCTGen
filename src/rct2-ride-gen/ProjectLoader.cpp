@@ -17,7 +17,6 @@
 #include "Vehicle.hpp"
 
 namespace RCTGen {
-
     using Json = json_t;
     using Light = light_t;
     using Mesh = mesh_t;

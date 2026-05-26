@@ -25,10 +25,10 @@ namespace RCTGen {
     using JsonRef = std::shared_ptr<Json>;
 
     // Wraps a raw json_t* whose ownership is transferred from the caller.
-    [[nodiscard]] JsonRef adoptJson(Json * raw);
+    [[nodiscard]] JsonRef adoptJson(Json *raw);
 
     // Wraps a borrowed json_t* by taking an additional reference.
-    [[nodiscard]] JsonRef borrowJson(Json * raw);
+    [[nodiscard]] JsonRef borrowJson(Json *raw);
 
     // Transfers an owning raw pointer back to a jansson API that consumes a
     // reference (e.g. json_array_append_new, json_object_set_new).
@@ -58,7 +58,7 @@ namespace RCTGen {
         std::string_view property,
         std::string_view itemLabel);
 
-    [[nodiscard]] JsonResult<JsonRef> asArrayOrWrap(Json * value);
+    [[nodiscard]] JsonResult<JsonRef> asArrayOrWrap(Json *value);
 
     // Build a json image entry (path, x, y, srcX/srcY/srcWidth/srcHeight,
     // palette=keep).

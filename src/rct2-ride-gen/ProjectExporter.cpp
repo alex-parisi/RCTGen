@@ -26,7 +26,6 @@
 namespace fs = std::filesystem;
 
 namespace RCTGen {
-
     using Context = context_t;
 
     namespace {
@@ -192,8 +191,8 @@ namespace RCTGen {
                 json_object_set_new(car, "numSeatRows", json_integer(vehicle.riders.size()));
 
                 const std::uint8_t friction = (project.running_sound < kFrictionSoundIds.size())
-                                            ? kFrictionSoundIds[project.running_sound]
-                                            : 0u;
+                                                  ? kFrictionSoundIds[project.running_sound]
+                                                  : 0u;
                 json_object_set_new(car, "frictionSoundId", json_integer(friction));
                 json_object_set_new(car, "soundRange", json_integer(project.secondary_sound));
                 json_object_set_new(car, "drawOrder", json_integer(vehicle.draw_order));

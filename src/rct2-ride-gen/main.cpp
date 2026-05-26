@@ -20,8 +20,7 @@ namespace fs = std::filesystem;
 using namespace RCTGen;
 
 namespace {
-    enum class Mode
-    {
+    enum class Mode {
         export_,
         skipRender,
         test

@@ -23,5 +23,5 @@ namespace RCTGen {
 
     [[nodiscard]] LoadResult<std::vector<light_t> > loadLights(Json *json);
 
-    [[nodiscard]] LoadResult<void> loadProject(Project &project, Json *json);
+    [[nodiscard]] LoadResult<void> loadProject(Project & project, Json * json);
 }

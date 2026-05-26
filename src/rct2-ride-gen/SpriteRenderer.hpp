@@ -7,7 +7,6 @@
 #include "Constants.hpp"
 
 namespace RCTGen {
-
     using Context = context_t;
     using Image = image_t;
 

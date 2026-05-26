@@ -6,7 +6,6 @@
 #include <format>
 
 namespace RCTGen {
-
     using Json = json_t;
 
     namespace {

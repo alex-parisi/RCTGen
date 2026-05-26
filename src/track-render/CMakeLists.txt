@@ -1,25 +1,29 @@
 # Sources shared between maketrack and subposition; compiled once.
 add_library(TrackCommon OBJECT
-        sprites.cpp
-        track_sections.cpp
+        Json.cpp
+        Logging.cpp
+        Sprites.cpp
+        TrackSections.cpp
 )
 target_include_directories(TrackCommon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(TrackCommon PUBLIC IsoRender)
+target_link_libraries(TrackCommon PUBLIC
+        rctgen_common_flags
+        IsoRender
+        jansson::jansson
+)
 
 add_executable(maketrack
         main.cpp
-        track.cpp
-        mask.cpp
+        Mask.cpp
+        Track.cpp
 )
 target_link_libraries(maketrack PRIVATE
-    TrackCommon
-    jansson::jansson
-    libzip::zip
+        TrackCommon
+        libzip::zip
 )
 
-add_executable(subposition subposition.cpp)
+add_executable(subposition Subposition.cpp)
 target_link_libraries(subposition PRIVATE
-    TrackCommon
-    jansson::jansson
-    libzip::zip
+        TrackCommon
+        libzip::zip
 )

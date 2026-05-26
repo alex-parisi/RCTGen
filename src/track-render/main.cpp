@@ -1,536 +1,477 @@
-#include <cassert>
+/// main.cpp
+
+#include <array>
 #include <cstdint>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
+#include <expected>
+#include <filesystem>
 #include <numbers>
+#include <span>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 #include <jansson.h>
 
-#include "track.h"
-#include "mask.h"
+#include "image.h"
+#include "model.h"
+#include "renderer.h"
+#include "vectormath.h"
 
-namespace
-{
+#include "Constants.hpp"
+#include "Json.hpp"
+#include "Logging.hpp"
+#include "Mask.hpp"
+#include "Track.hpp"
 
-context_t get_context(light_t* lights, std::uint32_t num_lights, std::uint32_t dither)
-{
-    context_t context;
-    context_init(&context, lights, num_lights, dither, palette_rct2(), TILE_SIZE);
-    return context;
-}
+namespace fs = std::filesystem;
+using namespace RCTGen;
 
-int load_model(mesh_t* model, json_t* json, const char* name)
-{
-    json_t* mesh = json_object_get(json, name);
-    if (mesh != nullptr)
-    {
-        if (json_is_string(mesh))
-        {
-            if (mesh_load_transform(model, json_string_value(mesh), rotate_y(-0.5f * std::numbers::pi_v<float>)))
-            {
-                std::printf("Failed to load model from file \"%s\"\n", json_string_value(mesh));
-                return 1;
-            }
-            return 0;
-        }
-        std::printf("Error: Property \"%s\" not found or is not an object\n", name);
-        return 1;
-    }
-    return 2;
-}
+namespace {
+    using LoadError = std::string;
+    template<class T>
+    using LoadResult = std::expected<T, LoadError>;
 
-int load_groups(json_t* json, std::uint64_t* out)
-{
-    std::uint64_t groups = 0;
-    for (int i = 0; i < static_cast<int>(json_array_size(json)); ++i)
-    {
-        json_t* group_name = json_array_get(json, i);
-        assert(group_name != nullptr);
-        if (!json_is_string(group_name))
-        {
-            std::printf("Error: Array \"sections\" contains non-string value\n");
+    // Returns 0 on success, 1 on error, 2 if the mesh entry is absent (caller
+    // treats absent as "not loaded").
+    int loadModelFile(mesh_t *out, const Json *parent, const char *name) {
+        const Json *mesh = json_object_get(parent, name);
+        if (mesh == nullptr) return 2;
+        if (!json_is_string(mesh)) {
+            printMsg("Error: Property \"{}\" not found or is not an object", name);
             return 1;
         }
-        const char* name = json_string_value(group_name);
+        const char *path = json_string_value(mesh);
+        if (mesh_load_transform(out, path, rotate_y(-0.5f * std::numbers::pi_v<float>)) != 0) {
+            printMsg("Failed to load model from file \"{}\"", path);
+            return 1;
+        }
+        return 0;
+    }
 
-        struct { const char* key; std::uint64_t value; } map[] = {
-            {"flat", TRACK_GROUP_FLAT},
-            {"brakes", TRACK_GROUP_BRAKES},
-            {"block_brakes", TRACK_GROUP_BLOCK_BRAKES},
-            {"diagonal_brakes", TRACK_GROUP_DIAGONAL_BRAKES},
-            {"sloped_brakes", TRACK_GROUP_SLOPED_BRAKES},
-            {"magnetic_brakes", TRACK_GROUP_MAGNETIC_BRAKES},
-            {"turns", TRACK_GROUP_TURNS},
-            {"gentle_slopes", TRACK_GROUP_GENTLE_SLOPES},
-            {"steep_slopes", TRACK_GROUP_STEEP_SLOPES},
-            {"vertical_slopes", TRACK_GROUP_VERTICAL_SLOPES},
-            {"diagonals", TRACK_GROUP_DIAGONALS},
-            {"sloped_turns", TRACK_GROUP_SLOPED_TURNS | TRACK_GROUP_STEEP_SLOPED_TURNS},
-            {"gentle_sloped_turns", TRACK_GROUP_SLOPED_TURNS},
-            {"banked_turns", TRACK_GROUP_BANKED_TURNS},
-            {"banked_sloped_turns", TRACK_GROUP_BANKED_SLOPED_TURNS},
-            {"large_sloped_turns", TRACK_GROUP_LARGE_SLOPED_TURNS},
-            {"large_banked_sloped_turns", TRACK_GROUP_LARGE_BANKED_SLOPED_TURNS},
-            {"s_bends", TRACK_GROUP_S_BENDS},
-            {"banked_s_bends", TRACK_GROUP_BANKED_S_BENDS},
-            {"helices", TRACK_GROUP_HELICES},
-            {"small_slope_transitions", TRACK_GROUP_SMALL_SLOPE_TRANSITIONS},
-            {"large_slope_transitions", TRACK_GROUP_LARGE_SLOPE_TRANSITIONS},
-            {"barrel_rolls", TRACK_GROUP_BARREL_ROLLS},
-            {"inline_twists", TRACK_GROUP_INLINE_TWISTS},
-            {"quarter_loops", TRACK_GROUP_QUARTER_LOOPS},
-            {"corkscrews", TRACK_GROUP_CORKSCREWS},
-            {"large_corkscrews", TRACK_GROUP_LARGE_CORKSCREWS},
-            {"half_loops", TRACK_GROUP_HALF_LOOPS},
-            {"vertical_loops", TRACK_GROUP_VERTICAL_LOOPS},
-            {"medium_half_loops", TRACK_GROUP_MEDIUM_HALF_LOOPS},
-            {"large_half_loops", TRACK_GROUP_LARGE_HALF_LOOPS},
-            {"zero_g_rolls", TRACK_GROUP_ZERO_G_ROLLS},
-            {"dive_loops", TRACK_GROUP_DIVE_LOOPS},
-            {"boosters", TRACK_GROUP_BOOSTERS},
-            {"launched_lifts", TRACK_GROUP_LAUNCHED_LIFTS},
-            {"turn_bank_transitions", TRACK_GROUP_TURN_BANK_TRANSITIONS},
-            {"steep_bank_transitions", TRACK_GROUP_STEEP_BANK_TRANSITIONS},
-            {"large_steep_sloped_turns", TRACK_GROUP_LARGE_STEEP_SLOPED_TURNS},
-            {"banked_barrel_rolls", TRACK_GROUP_BANKED_BARREL_ROLLS},
-            {"banked_inline_twists", TRACK_GROUP_BANKED_INLINE_TWISTS},
-            {"banked_zero_g_rolls", TRACK_GROUP_BANKED_ZERO_G_ROLLS},
-            {"vertical_boosters", TRACK_GROUP_VERTICAL_BOOSTERS},
+    LoadResult<TrackGroup> loadGroups(const Json *json) {
+        struct Entry {
+            std::string_view key;
+            TrackGroup value;
         };
-        bool matched = false;
-        for (const auto& [key, value] : map)
-        {
-            if (std::strcmp(name, key) == 0) { groups |= value; matched = true; break; }
-        }
-        if (!matched)
-        {
-            std::printf("Error: Unrecognized section group \"%s\"\n", name);
-            return 1;
-        }
-    }
-    *out = groups;
-    return 0;
-}
-
-int load_offsets(json_t* json, float* offsets)
-{
-    constexpr const char* row_names[10] = {"flat", "gentle", "steep", "flat_banked", "gentle_banked", "inverted", "diagonal", "diagonal_banked", "diagonal_gentle", "diagonal_steep"};
-
-    std::memset(offsets, 0, 88 * sizeof(float));
-
-    for (int i = 0; i < 10; ++i)
-    {
-        json_t* row = json_object_get(json, row_names[i]);
-        if (row == nullptr) continue;
-        if (!json_is_array(row) || json_array_size(row) != 8)
-        {
-            std::printf("Property \"%s\" is not an array of length 8\n", row_names[i]);
-            return 1;
-        }
-        for (int j = 0; j < 8; ++j)
-        {
-            json_t* value = json_array_get(row, j);
-            if (!json_is_number(value))
+        static constexpr std::array<Entry, 42> kMap = {
             {
-                std::printf("Array \"%s\" contains non numeric value\n", row_names[i]);
-                return 1;
+                {"flat", TrackGroup::flat},
+                {"brakes", TrackGroup::brakes},
+                {"block_brakes", TrackGroup::blockBrakes},
+                {"diagonal_brakes", TrackGroup::diagonalBrakes},
+                {"sloped_brakes", TrackGroup::slopedBrakes},
+                {"magnetic_brakes", TrackGroup::magneticBrakes},
+                {"turns", TrackGroup::turns},
+                {"gentle_slopes", TrackGroup::gentleSlopes},
+                {"steep_slopes", TrackGroup::steepSlopes},
+                {"vertical_slopes", TrackGroup::verticalSlopes},
+                {"diagonals", TrackGroup::diagonals},
+                {"sloped_turns", TrackGroup::slopedTurns | TrackGroup::steepSlopedTurns},
+                {"gentle_sloped_turns", TrackGroup::slopedTurns},
+                {"banked_turns", TrackGroup::bankedTurns},
+                {"banked_sloped_turns", TrackGroup::bankedSlopedTurns},
+                {"large_sloped_turns", TrackGroup::largeSlopedTurns},
+                {"large_banked_sloped_turns", TrackGroup::largeBankedSlopedTurns},
+                {"s_bends", TrackGroup::sBends},
+                {"banked_s_bends", TrackGroup::bankedSBends},
+                {"helices", TrackGroup::helices},
+                {"small_slope_transitions", TrackGroup::smallSlopeTransitions},
+                {"large_slope_transitions", TrackGroup::largeSlopeTransitions},
+                {"barrel_rolls", TrackGroup::barrelRolls},
+                {"inline_twists", TrackGroup::inlineTwists},
+                {"quarter_loops", TrackGroup::quarterLoops},
+                {"corkscrews", TrackGroup::corkscrews},
+                {"large_corkscrews", TrackGroup::largeCorkscrews},
+                {"half_loops", TrackGroup::halfLoops},
+                {"vertical_loops", TrackGroup::verticalLoops},
+                {"medium_half_loops", TrackGroup::mediumHalfLoops},
+                {"large_half_loops", TrackGroup::largeHalfLoops},
+                {"zero_g_rolls", TrackGroup::zeroGRolls},
+                {"dive_loops", TrackGroup::diveLoops},
+                {"boosters", TrackGroup::boosters},
+                {"launched_lifts", TrackGroup::launchedLifts},
+                {"turn_bank_transitions", TrackGroup::turnBankTransitions},
+                {"steep_bank_transitions", TrackGroup::steepBankTransitions},
+                {"large_steep_sloped_turns", TrackGroup::largeSteepSlopedTurns},
+                {"banked_barrel_rolls", TrackGroup::bankedBarrelRolls},
+                {"banked_inline_twists", TrackGroup::bankedInlineTwists},
+                {"banked_zero_g_rolls", TrackGroup::bankedZeroGRolls},
+                {"vertical_boosters", TrackGroup::verticalBoosters},
             }
-            offsets[8 * i + j] = json_number_value(value);
-        }
-    }
-    return 0;
-}
+        };
 
-int load_required_float(json_t* json, const char* name, float* value, float mult, int preloaded)
-{
-    json_t* value_json = json_object_get(json, name);
-    if (value_json != nullptr)
-    {
-        if (json_is_number(value_json)) *value = mult * json_number_value(value_json);
-        else
-        {
-            std::printf("Error: Property \"%s\" is not a number\n", name);
-            return 1;
-        }
-    }
-    else if (!preloaded)
-    {
-        std::printf("Error: Property \"%s\" not found\n", name);
-        return 1;
-    }
-    return 0;
-}
-
-int load_float_with_default(json_t* json, const char* name, float* value, float mult, float default_value, int preloaded)
-{
-    json_t* value_json = json_object_get(json, name);
-    if (value_json != nullptr)
-    {
-        if (json_is_number(value_json)) *value = mult * json_number_value(value_json);
-        else
-        {
-            std::printf("Error: Property \"%s\" not found or is not a number\n", name);
-            return 1;
-        }
-    }
-    else if (!preloaded) *value = default_value;
-    return 0;
-}
-
-int load_track_type(track_type_t* track_type, json_t* json, int preloaded)
-{
-    json_t* flags = json_object_get(json, "flags");
-    if (flags != nullptr)
-    {
-        track_type->flags = 0;
-
-        if (!json_is_array(flags)) { std::printf("Error: Property \"flags\" is not an array\n"); return 1; }
-        for (int i = 0; i < static_cast<int>(json_array_size(flags)); ++i)
-        {
-            json_t* flag_name = json_array_get(flags, i);
-            assert(flag_name != nullptr);
-            if (!json_is_string(flag_name))
-            {
-                std::printf("Error: Array \"flags\" contains non-string value\n");
-                return 1;
+        TrackGroup groups = TrackGroup::none;
+        for (std::size_t i = 0; i < json_array_size(json); i++) {
+            const Json *name_json = json_array_get(json, i);
+            if (!json_is_string(name_json)) {
+                return std::unexpected(std::string("Array \"sections\" contains non-string value"));
             }
-            const char* name = json_string_value(flag_name);
-            if (std::strcmp(name, "has_lift") == 0) track_type->flags |= TRACK_HAS_LIFT;
-            else if (std::strcmp(name, "has_supports") == 0) track_type->flags |= TRACK_HAS_SUPPORTS;
-            else if (std::strcmp(name, "separate_tie") == 0) track_type->flags |= TRACK_SEPARATE_TIE;
-            else if (std::strcmp(name, "tie_at_boundary") == 0) track_type->flags |= TRACK_SEPARATE_TIE | TRACK_TIE_AT_BOUNDARY;
-            else if (std::strcmp(name, "special_end_offsets") == 0) track_type->flags |= TRACK_SPECIAL_OFFSETS;
-            else
-            {
-                std::printf("Error: Unrecognized flag \"%s\"\n", name);
-                return 1;
+            const std::string_view name = json_string_value(name_json);
+            bool matched = false;
+            for (const auto &e: kMap) {
+                if (e.key == name) {
+                    groups |= e.value;
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                return std::unexpected(std::format("Unrecognized section group \"{}\"", name));
             }
         }
+        return groups;
     }
 
-    json_t* groups = json_object_get(json, "sections");
-    if (groups != nullptr)
-    {
-        if (!json_is_array(groups)) { std::printf("Error: Property \"sections\" is not an array\n"); return 1; }
-        if (load_groups(groups, &track_type->groups)) return 1;
-    }
-
-    json_t* masks_json = json_object_get(json, "masks");
-    if (masks_json != nullptr)
-    {
-        if (!json_is_string(masks_json)) { std::printf("Error: Property \"masks\" is not a string\n"); return 1; }
-        if (load_masks(json_string_value(masks_json), track_type->masks)) return 1;
-    }
-    else if (!preloaded)
-    {
-        std::printf("Error: Property \"masks\" not found\n");
-        return 1;
-    }
-
-    json_t* name = json_object_get(json, "name");
-    if (name)
-    {
-        if (!json_is_string(name)) { std::printf("Error: Property \"name\" is not a string\n"); return 1; }
-        track_type->suffix[0] = '_';
-        std::strncpy(track_type->suffix + 1, json_string_value(name), 254);
-        track_type->suffix[255] = '\0';
-    }
-    else if (!preloaded) track_type->suffix[0] = 0;
-
-    if (track_type->flags & TRACK_HAS_LIFT)
-    {
-        json_t* offset = json_object_get(json, "lift_offset");
-        if (offset)
-        {
-            if (!json_is_integer(offset)) { std::printf("Error: Property \"lift_offset\" is not an int\n"); return 1; }
-            track_type->lift_offset = json_integer_value(offset);
-        }
-        else if (!preloaded) track_type->lift_offset = 13;
-    }
-
-    if (load_required_float(json, "length", &track_type->length, TILE_SIZE, preloaded)) return 1;
-    if (load_float_with_default(json, "brake_length", &track_type->brake_length, TILE_SIZE, TILE_SIZE, preloaded)) return 1;
-
-    if (track_type->flags & TRACK_TIE_AT_BOUNDARY)
-    {
-        if (load_required_float(json, "tie_length", &track_type->tie_length, TILE_SIZE, preloaded)) return 1;
-    }
-
-    if (load_required_float(json, "z_offset", &track_type->z_offset, 1, preloaded)) return 1;
-    if (load_float_with_default(json, "support_spacing", &track_type->support_spacing, TILE_SIZE, TILE_SIZE, preloaded)) return 1;
-    if (load_float_with_default(json, "pivot", &track_type->pivot, TILE_SIZE, 0, preloaded)) return 1;
-
-    json_t* models = json_object_get(json, "models");
-    if (models == nullptr || !json_is_object(models))
-    {
-        std::printf("Error: Property \"models\" not found or is not an object\n");
-        return 1;
-    }
-
-    if (load_model(&track_type->mesh, models, "track"))
-    {
-        std::printf("Error: Track mesh not found\n");
-        return 1;
-    }
-    if (load_model(&track_type->mask, models, "mask"))
-    {
-        mesh_destroy(&track_type->mesh);
-        std::printf("Error: Mask mesh not found\n");
-        return 1;
-    }
-
-    if (track_type->flags & TRACK_SEPARATE_TIE)
-    {
-        if (load_model(&track_type->tie_mesh, models, "tie"))
-        {
-            mesh_destroy(&track_type->mesh);
-            mesh_destroy(&track_type->mask);
-            std::printf("Error: separate tie mesh not found\n");
-            return 1;
-        }
-
-        if (track_type->flags & TRACK_TIE_AT_BOUNDARY)
-        {
-            if (load_model(&track_type->mesh_tie, models, "track_tie"))
-            {
-                mesh_destroy(&track_type->mesh);
-                mesh_destroy(&track_type->mask);
-                mesh_destroy(&track_type->tie_mesh);
-                std::printf("Error: track_tie mesh not found\n");
-                return 1;
+    LoadResult<void> loadOffsets(const Json *json, std::array<float, 88> &offsets) {
+        static constexpr std::array<std::string_view, 10> kRows = {
+            "flat", "gentle", "steep", "flat_banked", "gentle_banked",
+            "inverted", "diagonal", "diagonal_banked", "diagonal_gentle", "diagonal_steep"
+        };
+        offsets.fill(0.0f);
+        for (std::size_t i = 0; i < kRows.size(); i++) {
+            const Json *row = json_object_get(json, std::string(kRows[i]).c_str());
+            if (row == nullptr) continue;
+            if (!json_is_array(row) || json_array_size(row) != 8) {
+                return std::unexpected(std::format(
+                    "Property \"{}\" is not an array of length 8", kRows[i]));
+            }
+            for (std::size_t j = 0; j < 8; j++) {
+                const Json *value = json_array_get(row, j);
+                if (!json_is_number(value)) {
+                    return std::unexpected(std::format(
+                        "Array \"{}\" contains non numeric value", kRows[i]));
+                }
+                offsets[8 * i + j] = static_cast<float>(json_number_value(value));
             }
         }
+        return {};
     }
 
-    constexpr const char* support_model_names[NUM_MODELS] = {
-        "track_alt",
-        "support_flat",
-        "support_bank_sixth",
-        "support_bank_third",
-        "support_bank_half",
-        "support_bank_two_thirds",
-        "support_bank_five_sixths",
-        "support_bank",
-        "support_base",
-        "brake",
-        "block_brake",
-        "booster",
-        "magnetic_brake",
-        "support_steep_to_vertical",
-        "support_vertical_to_steep",
-        "support_vertical",
-        "support_vertical_twist",
-        "support_barrel_roll",
-        "support_half_loop",
-        "support_quarter_loop",
-        "support_corkscrew",
-        "support_zero_g_roll",
-        "support_large_zero_g_roll",
+    LoadResult<void> loadOptionalFloat(const Json *json, const char *name,
+                                       float &out, float mult, bool required) {
+        const Json *v = json_object_get(json, name);
+        if (v != nullptr) {
+            if (!json_is_number(v)) {
+                return std::unexpected(std::format("Property \"{}\" is not a number", name));
+            }
+            out = static_cast<float>(mult * json_number_value(v));
+        } else if (required) {
+            return std::unexpected(std::format("Property \"{}\" not found", name));
+        }
+        return {};
+    }
+
+    LoadResult<TrackTypeFlag> loadTrackFlags(const Json *flagsJson) {
+        TrackTypeFlag flags = TrackTypeFlag::none;
+        if (!json_is_array(flagsJson)) {
+            return std::unexpected(std::string("Property \"flags\" is not an array"));
+        }
+        for (std::size_t i = 0; i < json_array_size(flagsJson); i++) {
+            const Json *fn = json_array_get(flagsJson, i);
+            if (!json_is_string(fn)) {
+                return std::unexpected(std::string("Array \"flags\" contains non-string value"));
+            }
+            const std::string_view name = json_string_value(fn);
+            if (name == "has_lift") flags |= TrackTypeFlag::hasLift;
+            else if (name == "has_supports") flags |= TrackTypeFlag::hasSupports;
+            else if (name == "separate_tie") flags |= TrackTypeFlag::separateTie;
+            else if (name == "tie_at_boundary") flags |= TrackTypeFlag::separateTie | TrackTypeFlag::tieAtBoundary;
+            else if (name == "special_end_offsets") flags |= TrackTypeFlag::specialOffsets;
+            else return std::unexpected(std::format("Unrecognized flag \"{}\"", name));
+        }
+        return flags;
+    }
+
+    LoadResult<void> loadTrackType(TrackType &trackType, Json *json, bool preloaded) {
+        if (Json *flags = json_object_get(json, "flags"); flags != nullptr) {
+            auto f = loadTrackFlags(flags);
+            if (!f) return std::unexpected(f.error());
+            trackType.flags = *f;
+        }
+
+        if (Json *groups = json_object_get(json, "sections"); groups != nullptr) {
+            if (!json_is_array(groups)) {
+                return std::unexpected(std::string("Property \"sections\" is not an array"));
+            }
+            auto g = loadGroups(groups);
+            if (!g) return std::unexpected(g.error());
+            trackType.groups = *g;
+        }
+
+        if (Json *masksJson = json_object_get(json, "masks"); masksJson != nullptr) {
+            if (!json_is_string(masksJson)) {
+                return std::unexpected(std::string("Property \"masks\" is not a string"));
+            }
+            if (auto r = loadMasks(json_string_value(masksJson), trackType.masks_); !r)
+                return std::unexpected(r.error());
+        } else if (!preloaded) {
+            return std::unexpected(std::string("Property \"masks\" not found"));
+        }
+
+        if (Json *name = json_object_get(json, "name"); name != nullptr) {
+            if (!json_is_string(name)) {
+                return std::unexpected(std::string("Property \"name\" is not a string"));
+            }
+            trackType.suffix = std::string("_") + json_string_value(name);
+        } else if (!preloaded) {
+            trackType.suffix.clear();
+        }
+
+        if (has_flag(trackType.flags, TrackTypeFlag::hasLift)) {
+            if (Json *off = json_object_get(json, "lift_offset"); off != nullptr) {
+                auto v = readInt(off, "lift_offset");
+                if (!v) return std::unexpected(v.error());
+                trackType.liftOffset = static_cast<std::int32_t>(*v);
+            } else if (!preloaded) {
+                trackType.liftOffset = 13;
+            }
+        }
+
+        if (auto r = loadOptionalFloat(json, "length", trackType.length, kTileSize, !preloaded); !r) return r;
+        if (auto r = loadOptionalFloat(json, "brake_length", trackType.brakeLength, kTileSize, false); !r) return r;
+        if (!preloaded && json_object_get(json, "brake_length") == nullptr) trackType.brakeLength = kTileSize;
+
+        if (has_flag(trackType.flags, TrackTypeFlag::tieAtBoundary)) {
+            if (auto r = loadOptionalFloat(json, "tie_length", trackType.tieLength, kTileSize, !preloaded); !r) return
+                    r;
+        }
+
+        if (auto r = loadOptionalFloat(json, "z_offset", trackType.zOffset, 1.0f, !preloaded); !r) return r;
+        if (auto r = loadOptionalFloat(json, "support_spacing", trackType.supportSpacing, kTileSize, false); !r) return
+                r;
+        if (!preloaded && json_object_get(json, "support_spacing") == nullptr) trackType.supportSpacing = kTileSize;
+        if (auto r = loadOptionalFloat(json, "pivot", trackType.pivot, kTileSize, false); !r) return r;
+        if (!preloaded && json_object_get(json, "pivot") == nullptr) trackType.pivot = 0.0f;
+
+        Json *models = json_object_get(json, "models");
+        if (models == nullptr || !json_is_object(models)) {
+            return std::unexpected(std::string(
+                "Property \"models\" not found or is not an object"));
+        }
+
+        if (loadModelFile(&trackType.mesh, models, "track") != 0) {
+            return std::unexpected(std::string("Track mesh not found"));
+        }
+        if (loadModelFile(&trackType.mask, models, "mask") != 0) {
+            mesh_destroy(&trackType.mesh);
+            return std::unexpected(std::string("Mask mesh not found"));
+        }
+
+        if (has_flag(trackType.flags, TrackTypeFlag::separateTie)) {
+            if (loadModelFile(&trackType.tieMesh, models, "tie") != 0) {
+                mesh_destroy(&trackType.mesh);
+                mesh_destroy(&trackType.mask);
+                return std::unexpected(std::string("separate tie mesh not found"));
+            }
+            if (has_flag(trackType.flags, TrackTypeFlag::tieAtBoundary)) {
+                if (loadModelFile(&trackType.meshTie, models, "track_tie") != 0) {
+                    mesh_destroy(&trackType.mesh);
+                    mesh_destroy(&trackType.mask);
+                    mesh_destroy(&trackType.tieMesh);
+                    return std::unexpected(std::string("track_tie mesh not found"));
+                }
+            }
+        }
+
+        static constexpr std::array<std::string_view, kNumModels> kSupportNames = {
+            "track_alt",
+            "support_flat",
+            "support_bank_sixth",
+            "support_bank_third",
+            "support_bank_half",
+            "support_bank_two_thirds",
+            "support_bank_five_sixths",
+            "support_bank",
+            "support_base",
+            "brake",
+            "block_brake",
+            "booster",
+            "magnetic_brake",
+            "support_steep_to_vertical",
+            "support_vertical_to_steep",
+            "support_vertical",
+            "support_vertical_twist",
+            "support_barrel_roll",
+            "support_half_loop",
+            "support_quarter_loop",
+            "support_corkscrew",
+            "support_zero_g_roll",
+            "support_large_zero_g_roll",
+        };
+
+        trackType.modelsLoaded = 0;
+        for (std::size_t i = 0; i < kNumModels; i++) {
+            int result = loadModelFile(&trackType.models[i], models, std::string(kSupportNames[i]).c_str());
+            if (result == 0) trackType.modelsLoaded |= 1u << i;
+            else if (result == 1) {
+                mesh_destroy(&trackType.mesh);
+                mesh_destroy(&trackType.mask);
+                for (std::size_t j = 0; j < i; j++) mesh_destroy(&trackType.models[j]);
+                return std::unexpected(std::format("Failed to load model {}", kSupportNames[i]));
+            }
+        }
+        return {};
+    }
+
+    LoadResult<std::vector<light_t> > loadLightsArray(Json *array) {
+        if (!json_is_array(array)) {
+            return std::unexpected(std::string("Property \"lights\" is not an array"));
+        }
+        std::vector<light_t> lights;
+        lights.reserve(json_array_size(array));
+        for (std::size_t i = 0; i < json_array_size(array); i++) {
+            Json *light = json_array_get(array, i);
+            if (!json_is_object(light)) {
+                printMsg("Warning: Light array contains an element which is not an object - ignoring");
+                continue;
+            }
+            light_t out{};
+            auto type = readString(json_object_get(light, "type"), "type");
+            if (!type) return std::unexpected(type.error());
+            if (*type == "diffuse") out.type = LIGHT_DIFFUSE;
+            else if (*type == "specular") out.type = LIGHT_SPECULAR;
+            else return std::unexpected(std::format("Unrecognized light type \"{}\"", *type));
+
+            auto shadow = readBool(json_object_get(light, "shadow"), "shadow");
+            if (!shadow) return std::unexpected(shadow.error());
+            out.shadow = *shadow ? 1 : 0;
+
+            auto dir = readVector3(json_object_get(light, "direction"));
+            if (!dir) return std::unexpected(dir.error());
+            out.direction = (*dir).normalized();
+
+            auto strength = readNumber(json_object_get(light, "strength"), "strength");
+            if (!strength) return std::unexpected(strength.error());
+            out.intensity = static_cast<float>(*strength);
+
+            lights.push_back(out);
+        }
+        return lights;
+    }
+
+    std::vector<light_t> defaultLights() {
+        return {
+            {LIGHT_DIFFUSE, 0, vector3(0.0f, -1.0f, 0.0f).normalized(), 0.25f},
+            {LIGHT_DIFFUSE, 0, vector3(1.0f, 0.3f, 0.0f).normalized(), 0.32f},
+            {LIGHT_SPECULAR, 0, vector3(1, 1, -1).normalized(), 1.0f},
+            {LIGHT_DIFFUSE, 0, vector3(1, 0.65f, -1).normalized(), 0.8f},
+            {LIGHT_DIFFUSE, 0, vector3(0.0f, 1.0f, 0.0f), 0.174f},
+            {LIGHT_DIFFUSE, 0, vector3(-1.0f, 0.0f, 0.0f).normalized(), 0.15f},
+            {LIGHT_DIFFUSE, 0, vector3(0.0f, 1.0f, 1.0f).normalized(), 0.2f},
+            {LIGHT_DIFFUSE, 0, vector3(0.65f, 0.816f, -0.65f).normalized(), 0.25f},
+            {LIGHT_DIFFUSE, 0, vector3(-1.0f, 0.0f, -1.0f).normalized(), 0.25f},
+        };
+    }
+
+    struct CliArgs {
+        fs::path inputFile;
     };
 
-    track_type->models_loaded = 0;
-    for (int i = 0; i < NUM_MODELS; ++i)
-    {
-        int result = load_model(&track_type->models[i], models, support_model_names[i]);
-        if (result == 0) track_type->models_loaded |= 1u << i;
-        else if (result == 1)
-        {
-            mesh_destroy(&track_type->mesh);
-            mesh_destroy(&track_type->mask);
-            for (int j = 0; j < i; ++j) mesh_destroy(&track_type->models[j]);
-            std::printf("Error: failed to load model %s\n", support_model_names[i]);
-            return 1;
+    std::expected<CliArgs, std::string> parseCli(std::span<char *const> argv) {
+        if (argv.size() != 2) {
+            return std::unexpected(std::string("Usage: maketrack <file>"));
         }
+        return CliArgs{argv[1]};
     }
-
-    return 0;
 }
 
-int load_vector(vector3_t* vector, json_t* array)
-{
-    const int size = json_array_size(array);
-    if (size != 3) { std::printf("Vector must have 3 components\n"); return 1; }
-
-    json_t* x = json_array_get(array, 0);
-    json_t* y = json_array_get(array, 1);
-    json_t* z = json_array_get(array, 2);
-
-    if (!json_is_number(x) || !json_is_number(y) || !json_is_number(z))
-    {
-        std::printf("Vector components must be numeric\n");
-        return 1;
-    }
-    vector->x = json_number_value(x);
-    vector->y = json_number_value(y);
-    vector->z = json_number_value(z);
-    return 0;
-}
-
-int load_lights(light_t* lights, int* lights_count, json_t* json)
-{
-    const int num_lights = json_array_size(json);
-    for (int i = 0; i < num_lights; ++i)
-    {
-        json_t* light = json_array_get(json, i);
-        assert(light != nullptr);
-        if (!json_is_object(light))
-        {
-            std::printf("Warning: Light array contains an element which is not an object-ignoring\n");
-            continue;
-        }
-
-        json_t* type = json_object_get(light, "type");
-        if (type == nullptr || !json_is_string(type))
-        {
-            std::printf("Error: Property \"type\" not found or is not a string\n");
-            return 1;
-        }
-
-        const char* type_value = json_string_value(type);
-        if (std::strcmp(type_value, "diffuse") == 0) lights[i].type = LIGHT_DIFFUSE;
-        else if (std::strcmp(type_value, "specular") == 0) lights[i].type = LIGHT_SPECULAR;
-        else std::printf("Unrecognized light type \"%s\"\n", type_value);
-
-        json_t* shadow = json_object_get(light, "shadow");
-        if (shadow == nullptr || !json_is_boolean(shadow))
-        {
-            std::printf("Error: Property \"shadow\" not found or is not a boolean\n");
-            return 1;
-        }
-        lights[i].shadow = json_boolean_value(shadow) ? 1 : 0;
-
-        json_t* direction = json_object_get(light, "direction");
-        if (direction == nullptr || !json_is_array(direction))
-        {
-            std::printf("Error: Property \"direction\" not found or is not a direction\n");
-            return 1;
-        }
-        if (load_vector(&lights[i].direction, direction)) return 1;
-        lights[i].direction = lights[i].direction.normalized();
-
-        json_t* strength = json_object_get(light, "strength");
-        if (strength == nullptr || !json_is_number(strength))
-        {
-            std::printf("Error: Property \"strength\" not found or is not a number\n");
-            return 1;
-        }
-        lights[i].intensity = json_number_value(strength);
-    }
-    *lights_count = num_lights;
-    return 0;
-}
-
-} // namespace
-
-int main(int argc, char** argv)
-{
-    if (argc != 2)
-    {
-        std::printf("Usage: TrackRender <file>\n");
+int main(int argc, char **argv) {
+    auto cli = parseCli(std::span<char *const>(argv, static_cast<std::size_t>(argc)));
+    if (!cli) {
+        printMsg("{}", cli.error());
         return 1;
     }
 
-    json_error_t error;
-    json_t* json = json_load_file(argv[1], 0, &error);
-    if (json == nullptr)
-    {
-        std::printf("Error: %s at line %d column %d\n", error.text, error.line, error.column);
+    auto root = loadFile(cli->inputFile);
+    if (!root) {
+        printMsg("Error: {}", root.error());
         return 1;
     }
+    Json *json = root->get();
 
-    const char* base_dir = nullptr;
-    if (json_t* j = json_object_get(json, "base_directory"); j != nullptr && json_is_string(j)) base_dir = json_string_value(j);
-    else std::printf("Error: No property \"base_directory\" found\n");
+    auto baseDir = readString(json_object_get(json, "base_directory"), "base_directory");
+    if (!baseDir) printMsg("Error: {}", baseDir.error());
+    auto spriteDir = readString(json_object_get(json, "sprite_directory"), "sprite_directory");
+    if (!spriteDir) printMsg("Error: {}", spriteDir.error());
+    auto spritefileIn = readString(json_object_get(json, "spritefile_in"), "spritefile_in");
+    if (!spritefileIn) printMsg("Error: {}", spritefileIn.error());
+    auto spritefileOut = readString(json_object_get(json, "spritefile_out"), "spritefile_out");
+    if (!spritefileOut) printMsg("Error: {}", spritefileOut.error());
 
-    const char* sprite_dir = nullptr;
-    if (json_t* j = json_object_get(json, "sprite_directory"); j != nullptr && json_is_string(j)) sprite_dir = json_string_value(j);
-    else std::printf("Error: No property \"sprite_directory\" found\n");
-
-    const char* spritefile_in = nullptr;
-    if (json_t* j = json_object_get(json, "spritefile_in"); j != nullptr && json_is_string(j)) spritefile_in = json_string_value(j);
-    else std::printf("Error: No property \"spritefile_in\" found\n");
-
-    const char* spritefile_out = nullptr;
-    if (json_t* j = json_object_get(json, "spritefile_out"); j != nullptr && json_is_string(j)) spritefile_out = json_string_value(j);
-    else std::printf("Error: No property \"spritefile_out\" found\n");
-
-    int num_lights = 9;
-    light_t lights[16] = {
-        {LIGHT_DIFFUSE, 0, vector3(0.0f, -1.0f, 0.0f).normalized(), 0.25f},
-        {LIGHT_DIFFUSE, 0, vector3(1.0f,  0.3f, 0.0f).normalized(), 0.32f},
-        {LIGHT_SPECULAR, 0, vector3(1, 1, -1).normalized(), 1.0f},
-        {LIGHT_DIFFUSE, 0, vector3(1, 0.65f, -1).normalized(), 0.8f},
-        {LIGHT_DIFFUSE, 0, vector3(0.0f, 1.0f, 0.0f), 0.174f},
-        {LIGHT_DIFFUSE, 0, vector3(-1.0f, 0.0f, 0.0f).normalized(), 0.15f},
-        {LIGHT_DIFFUSE, 0, vector3(0.0f, 1.0f, 1.0f).normalized(), 0.2f},
-        {LIGHT_DIFFUSE, 0, vector3(0.65f, 0.816f, -0.65f).normalized(), 0.25f},
-        {LIGHT_DIFFUSE, 0, vector3(-1.0f, 0.0f, -1.0f).normalized(), 0.25f},
-        {0, 0, {0, 0, 0}, 0}, {0, 0, {0, 0, 0}, 0}, {0, 0, {0, 0, 0}, 0},
-        {0, 0, {0, 0, 0}, 0}, {0, 0, {0, 0, 0}, 0}, {0, 0, {0, 0, 0}, 0},
-        {0, 0, {0, 0, 0}, 0},
-    };
-
-    if (json_t* light_array = json_object_get(json, "lights"); light_array != nullptr)
-    {
-        if (!json_is_array(light_array)) { std::printf("Error: Property \"lights\" is not an array\n"); return 1; }
-        if (load_lights(lights, &num_lights, light_array)) return 1;
-    }
-
-    int dither = 1;
-    if (json_t* dither_json = json_object_get(json, "dither"); dither_json != nullptr)
-    {
-        if (!json_is_true(dither_json) && !json_is_false(dither_json))
-        {
-            std::printf("Error: Property \"dither\" is not a boolean\n");
+    std::vector<light_t> lights = defaultLights();
+    if (Json *lightArray = json_object_get(json, "lights"); lightArray != nullptr) {
+        auto loaded = loadLightsArray(lightArray);
+        if (!loaded) {
+            printMsg("Error: {}", loaded.error());
             return 1;
         }
-        dither = json_is_true(dither_json);
+        lights = std::move(*loaded);
     }
 
-    json_t* tracks_json = json_object_get(json, "tracks");
-    if (tracks_json == nullptr || !json_is_array(tracks_json))
-    {
-        std::printf("Error: Property \"tracks\" not found or is not an array\n");
+    std::uint32_t dither = 1;
+    if (Json *ditherJson = json_object_get(json, "dither"); ditherJson != nullptr) {
+        if (!json_is_boolean(ditherJson)) {
+            printMsg("Error: Property \"dither\" is not a boolean");
+            return 1;
+        }
+        dither = json_is_true(ditherJson);
+    }
+
+    Json *tracksJson = json_object_get(json, "tracks");
+    if (tracksJson == nullptr || !json_is_array(tracksJson)) {
+        printMsg("Error: Property \"tracks\" not found or is not an array");
         return 1;
     }
 
-    float offset_table[88];
-    if (json_t* offsets = json_object_get(json, "offsets"); offsets != nullptr)
-    {
-        if (!json_is_object(offsets)) { std::printf("Error: Property \"offsets\" is not an object\n"); return 1; }
-        if (load_offsets(offsets, offset_table)) return 1;
+    std::array < float, 88 > offsetTable{};
+    if (Json *offsets = json_object_get(json, "offsets"); offsets != nullptr) {
+        if (!json_is_object(offsets)) {
+            printMsg("Error: Property \"offsets\" is not an object");
+            return 1;
+        }
+        if (auto r = loadOffsets(offsets, offsetTable); !r) {
+            printMsg("Error: {}", r.error());
+            return 1;
+        }
     }
-    else std::memset(offset_table, 0, 88 * sizeof(float));
 
-    char full_path[256];
-    std::snprintf(full_path, 256, "%s%s", base_dir, spritefile_in);
-    json_t* sprites = json_load_file(full_path, 0, &error);
-    if (sprites == nullptr)
-    {
-        std::printf("Error: %s in file %s line %d column %d\n", error.text, error.source, error.line, error.column);
+    fs::path basePath = baseDir ? *baseDir : "";
+    fs::path inPath = basePath / (spritefileIn ? *spritefileIn : std::string{});
+    auto spritesRef = loadFile(inPath);
+    if (!spritesRef) {
+        printMsg("Error: {}", spritesRef.error());
         return 1;
     }
+    Json *sprites = spritesRef->get();
 
-    context_t context = get_context(lights, num_lights, dither);
+    context_t context;
+    context_init(&context, lights.data(), static_cast<std::uint32_t>(lights.size()),
+                 dither, palette_rct2(), kTileSize);
 
-    track_type_t track_type;
-    for (int i = 0; i < static_cast<int>(json_array_size(tracks_json)); ++i)
-    {
-        json_t* track = json_array_get(tracks_json, i);
-        if (json_is_object(track) && load_track_type(&track_type, track, i != 0))
-        {
-            std::printf("Error loading track\n");
-            json_decref(sprites);
+    TrackType trackType;
+    for (std::size_t i = 0; i < json_array_size(tracksJson); i++) {
+        Json *track = json_array_get(tracksJson, i);
+        if (!json_is_object(track)) continue;
+        if (auto r = loadTrackType(trackType, track, i != 0); !r) {
+            printMsg("Error loading track: {}", r.error());
             context_destroy(&context);
             return 1;
         }
-        write_track_type(&context, &track_type, sprites, offset_table, base_dir, sprite_dir);
+        writeTrackType(&context, &trackType, sprites,
+                       std::span < const float, 88 >
+        {
+            offsetTable
+        }
+        ,
+        basePath, spriteDir ? *spriteDir : ""
+        )
+        ;
     }
 
-    std::snprintf(full_path, 256, "%s%s", base_dir, spritefile_out);
-    json_dump_file(sprites, full_path, JSON_INDENT(4));
+    fs::path outPath = basePath / (spritefileOut ? *spritefileOut : std::string{});
+    dumpFile(sprites, outPath, JSON_INDENT(4));
     context_destroy(&context);
-
     return 0;
 }
