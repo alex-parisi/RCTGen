@@ -5,8 +5,12 @@
 #include "../iso-render/model.h"
 #include "../iso-render/renderer.h"
 
-inline constexpr float TILE_SIZE = 3.3f; // ~3.67423461417477
-inline constexpr float CLEARANCE_HEIGHT = 0.20412414523f * TILE_SIZE;
+// Kept at double precision to match master's macro-based #define TILE_SIZE 3.3
+// semantics: expressions like `0.5f * TILE_SIZE` then promote `0.5f` to
+// double, evaluate as double, and only truncate to float at the final assign.
+// A float TILE_SIZE breaks byte-equivalence with the goldens by ~70 sprites.
+inline constexpr double TILE_SIZE = 3.3;
+inline constexpr double CLEARANCE_HEIGHT = 0.20412414523 * TILE_SIZE;
 
 // Per-section flag bits, combined with bitwise OR.
 inline constexpr std::uint32_t TRACK_DIAGONAL                     = 1u   << 0;

@@ -1,13 +1,23 @@
+// Verbatim port of the C-era track-section curves with no changes -- the
+// NORM macro and BANK_ANGLE constant rely on master's C-style double-
+// promotion semantics (unqualified sqrt() through <math.h> takes double;
+// 0.25*M_PI is a double constant), and an inline `float NORM(float, float)`
+// or `constexpr float BANK_ANGLE = 0.25f * pi_v<float>` rewrite breaks
+// byte-equivalence with the goldens on every curved track section. Bisect
+// established 5eff54f "Modernize iso-render" as the first bad commit but
+// its ripple landed here too via the modernized renderer's expectations.
+
+#include <stdint.h>
+#ifdef _MSC_VER
+#define _USE_MATH_DEFINES
+#endif
 #include "track.h"
 #include "sprites.h"
+#include <math.h>
+#include <stdint.h>
+#define NORM(x,y) (sqrt((x)*(x)+(y)*(y)))
 
-#include <cmath>
-#include <cstdint>
-#include <numbers>
-
-inline float NORM(float x, float y) noexcept { return std::sqrt(x * x + y * y); }
-
-inline constexpr float BANK_ANGLE = 0.25f * std::numbers::pi_v<float>;
+#define BANK_ANGLE 0.25*M_PI//(2.5/18.0)*M_PI
 
 float cubic(float a,float b,float c,float d,float x)
 {
