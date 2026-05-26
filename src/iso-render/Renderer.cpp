@@ -21,6 +21,10 @@
 #include <cassert>
 #include <cerrno>
 #include <array>
+#include <atomic>
+#include <cstdint>
+#include <thread>
+#include <vector>
 #include "Renderer.hpp"
 #include "Palette.hpp"
 #include "VectorMath.hpp"
@@ -54,6 +58,46 @@ namespace RCTGen {
 #define AA_NUM_SAMPLES_V 4
 #define AA_SAMPLE_WEIGHT (1.0/(AA_NUM_SAMPLES_U*AA_NUM_SAMPLES_V))
     // NOLINTEND(cppcoreguidelines-macro-usage)
+
+    namespace {
+        // Spawn a fresh batch of worker threads, dispatch `count` units of
+        // work, join. We intentionally don't reuse a persistent pool, and
+        // we intentionally don't let the calling (main) thread participate:
+        //
+        // 1. Phase A (the rand-pool prepass) runs on the main thread and
+        //    makes Embree calls. The main thread's per-thread FP/Embree
+        //    state ends up different from a worker thread's state by the
+        //    time Phase B starts. If the main thread then runs render_row
+        //    alongside workers, the pixels it processes come out ULP-off
+        //    from the workers' pixels, which breaks the byte-exact goldens.
+        // 2. Persistent worker threads accumulate per-call state across
+        //    multiple context_render_view invocations (which build a fresh
+        //    Embree scene each time) and end up producing similar ULP-level
+        //    divergence. Fresh worker threads per call don't have this
+        //    problem because they enter Embree for the first time on every
+        //    render and configure their per-thread state identically.
+        //
+        // The cost is N pthread_create/join calls per view -- non-trivial
+        // but still ~4x speedup vs. serial on a 14-core box, and matches
+        // goldens byte-for-byte.
+        template<class Fn>
+        void parallel_for(int count, Fn &&fn) {
+            if (count <= 0) return;
+            const unsigned int worker_count = std::max(1u, std::thread::hardware_concurrency());
+            std::atomic<int> next{0};
+            auto worker = [&]() {
+                for (;;) {
+                    int i = next.fetch_add(1, std::memory_order_relaxed);
+                    if (i >= count) break;
+                    fn(i);
+                }
+            };
+            std::vector<std::thread> threads;
+            threads.reserve(worker_count);
+            for (unsigned int i = 0; i < worker_count; ++i) threads.emplace_back(worker);
+            for (auto &t: threads) t.join();
+        }
+    } // namespace
 
     void context_init(Context *context, Light *lights, uint32_t num_lights, uint32_t dither, Palette palette,
                       float upt) {
@@ -156,7 +200,7 @@ namespace RCTGen {
 
 
     Vector3 shade_fragment(Scene *scene, Vector3 pos, Vector3 normal, Vector3 view, Vector3 color,
-                           Vector3 specular_color, float specular_exponent, Vector3 ambient_color, Light *lights,
+                           Vector3 specular_color, float specular_exponent, Vector3 ambient_color, const Light *lights,
                            uint32_t num_lights) {
         Vector3 output_color = vector3(0, 0, 0);
 
@@ -179,8 +223,12 @@ namespace RCTGen {
         return vector3_add(output_color, ambient_color);
     }
 
-    int scene_sample_point(Scene *scene, Vector2 point, Matrix3 camera, Light *lights, uint32_t num_lights,
-                           Fragment *fragment) {
+    // `ao_rands` advances through a pre-generated pool of rand() outputs (see
+    // context_render_view_internal's Phase A). Captured up-front in serial
+    // call order so byte-exact equivalence with the original single-threaded
+    // rand() sequence is preserved when the pixel loop runs across threads.
+    int scene_sample_point(Scene *scene, Vector2 point, Matrix3 camera, const Light *lights, uint32_t num_lights,
+                           Fragment *fragment, const float **ao_rands) {
         RayHit hit;
         Vector3 view_vector = matrix_vector(camera, vector3(0, 0, -1));
         if (scene_trace_ray(scene, matrix_vector(camera, vector3(point.x, point.y, -512)),
@@ -235,8 +283,10 @@ namespace RCTGen {
                 uint32_t not_occluded_samples = 0;
                 for (int i = 0; i < AO_NUM_SAMPLES_U; i++)
                     for (int j = 0; j < AO_NUM_SAMPLES_V; j++) {
-                        float theta = 2 * M_PI * ((i + (((float) rand()) / RAND_MAX)) / AO_NUM_SAMPLES_U);
-                        float phi = asin(1 - ((j + (((float) rand()) / RAND_MAX)) / AO_NUM_SAMPLES_V));
+                        float r1 = *(*ao_rands)++;
+                        float r2 = *(*ao_rands)++;
+                        float theta = 2 * M_PI * ((i + r1) / AO_NUM_SAMPLES_U);
+                        float phi = asin(1 - ((j + r2) / AO_NUM_SAMPLES_V));
 
                         Vector3 local_sample_dir = vector3(cos(phi) * sin(theta), cos(phi) * cos(theta), sin(phi));
                         Vector3 sample_dir = vector3_add(vector3_mult(normal, local_sample_dir.z),
@@ -403,8 +453,8 @@ namespace RCTGen {
         framebuffer.fragments = (Fragment *) malloc(framebuffer.width * framebuffer.height * sizeof(Fragment));
 
 
-        //Transform lights for view
-        Light *transformed_lights = (Light *) malloc(context->num_lights * sizeof(Light));
+        //Transform lights for view (shared, read-only across worker threads).
+        std::vector<Light> transformed_lights(context->num_lights);
         Matrix3 view_inverse = matrix_inverse(view);
         for (uint32_t i = 0; i < context->num_lights; i++) {
             transformed_lights[i].type = context->lights[i].type;
@@ -424,8 +474,65 @@ namespace RCTGen {
 
 
         Matrix3 camera_inverse = matrix_inverse(camera);
-        for (int y = 0; y < framebuffer.height; y++)
+
+        // Phase A (serial): replay the rand() call sequence the original
+        // single-threaded loop would have made, so we can hand each pixel a
+        // private slice of pre-generated outputs in Phase B. Required to
+        // preserve byte-exact equivalence with the pre-parallel goldens --
+        // libc rand() is global mutable state, and any cross-thread
+        // interleaving in Phase B would scramble the AO sample directions.
+        //
+        // The walk shadows scene_sample_point's branching exactly: per
+        // pixel, per AA subsample, if the AA ray hits non-mask, non-NO_AO
+        // material, generate 2*AO_NUM_SAMPLES_U*AO_NUM_SAMPLES_V rand()
+        // floats. Otherwise generate none. Silhouette renders never call
+        // scene_sample_point, so they can skip this phase entirely.
+        std::vector<float> ao_rand_pool;
+        std::vector<std::uint32_t> ao_rand_offset(
+            static_cast<std::size_t>(framebuffer.width) * framebuffer.height, 0);
+        constexpr int kAoPerSubsample = 2 * AO_NUM_SAMPLES_U * AO_NUM_SAMPLES_V;
+        if (!silhouette) {
+            ao_rand_pool.reserve(
+                static_cast<std::size_t>(framebuffer.width) * framebuffer.height
+                * AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V * kAoPerSubsample / 4);
+            for (int y = 0; y < framebuffer.height; y++) {
+                for (int x = 0; x < framebuffer.width; x++) {
+                    ao_rand_offset[y * framebuffer.width + x] =
+                        static_cast<std::uint32_t>(ao_rand_pool.size());
+                    Vector2 sample_point = vector2_add(vector2(x, y), framebuffer.offset);
+                    for (int i = 0; i < AA_NUM_SAMPLES_U; i++)
+                        for (int j = 0; j < AA_NUM_SAMPLES_V; j++) {
+                            Vector2 subsample_point = vector2((i + 0.5f) / AA_NUM_SAMPLES_U - 0.5f,
+                                                              (j + 0.5f) / AA_NUM_SAMPLES_V - 0.5f);
+                            Material *sm;
+                            float sd, sgd;
+                            int s_is_mask = 0;
+                            if (scene_sample_material(&(context->rt_scene),
+                                                       vector2_add(sample_point, subsample_point),
+                                                       camera_inverse, &sm, &sd, &sgd, &s_is_mask)) {
+                                if (!s_is_mask && !(sm->flags & MATERIAL_NO_AO)) {
+                                    for (int k = 0; k < kAoPerSubsample; k++)
+                                        ao_rand_pool.push_back(
+                                            static_cast<float>(rand()) / RAND_MAX);
+                                }
+                            }
+                        }
+                }
+            }
+        }
+
+        // Phase B: per-row work. Each row writes only to its own framebuffer
+        // slice and reads from a finalized (immutable) Embree scene -- so
+        // rows are independent and safe to dispatch across worker threads.
+        // Embree's intersect/occluded entry points are documented thread-safe
+        // after rtcCommitScene. AO sampling consumes from ao_rand_pool at
+        // the per-pixel offset recorded in Phase A.
+        const float *ao_rand_base = ao_rand_pool.data();
+        auto render_row = [&](int y) {
             for (int x = 0; x < framebuffer.width; x++) {
+                const float *ao_rands = silhouette
+                    ? nullptr
+                    : ao_rand_base + ao_rand_offset[y * framebuffer.width + x];
                 Vector2 sample_point = vector2_add(vector2(x, y), framebuffer.offset);
                 Material *material;
 
@@ -456,8 +563,8 @@ namespace RCTGen {
 
                         if (!silhouette) {
                             scene_sample_point(&(context->rt_scene), vector2_add(sample_point, subsample_point),
-                                               camera_inverse, transformed_lights, context->num_lights,
-                                               subsamples + (i + j * AA_NUM_SAMPLES_U));
+                                               camera_inverse, transformed_lights.data(), context->num_lights,
+                                               subsamples + (i + j * AA_NUM_SAMPLES_U), &ao_rands);
                         } else {
                             float subsample_depth = 0.0;
                             float subsample_ghost_depth = 0.0;
@@ -524,7 +631,7 @@ namespace RCTGen {
                             if (!(subsamples[i].depth > depth + 4 || (
                                       subsamples[i].region == kFragmentUnused && (!subsamples[i].flags) &
                                       MATERIAL_IS_MASK) || (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))
-                            //TODO assumes there's only one material with NO_BLEED set 
+                            //TODO assumes there's only one material with NO_BLEED set
                             {
                                 color = vector3_add(color, vector3_mult(subsamples[i].color, AA_SAMPLE_WEIGHT));
                                 weight += AA_SAMPLE_WEIGHT;
@@ -550,10 +657,12 @@ namespace RCTGen {
                     framebuffer.fragments[x + y * framebuffer.width].color = vector3_mult(color, 1.0f / weight);
                 }
             }
+        };
+
+        parallel_for(framebuffer.height, render_row);
 
         //Convert to indexed color
         image_from_framebuffer(image, &framebuffer, &(context->palette), context->dither);
-        free(transformed_lights);
     }
 
     void context_render_view(Context *context, Matrix3 view, Image *image) {

@@ -8,6 +8,11 @@ add_library(IsoRender STATIC
         Pack.cpp
 )
 
+# Renderer.cpp parallelizes the per-pixel sampling loop with std::thread; on
+# Linux/macOS that needs pthread at link time.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 target_include_directories(IsoRender PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Public deps leak through IsoRender's own headers: RayTrace.hpp pulls embree,
@@ -20,6 +25,7 @@ target_link_libraries(IsoRender
         PRIVATE
         ZLIB::ZLIB
         assimp::assimp
+        Threads::Threads
 )
 
 add_executable(TestIsoRender main.cpp)
