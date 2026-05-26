@@ -4,10 +4,10 @@
 
 #include <array>
 
-#include "image.h"
+#include "Image.hpp"
 
 namespace RCTGen {
-    extern std::array<image_t, 4> kFlatChain;
-    extern std::array<image_t, 4> kGentleChain;
-    extern std::array<image_t, 4> kFlatDiagChain;
+    extern std::array<Image, 4> kFlatChain;
+    extern std::array<Image, 4> kGentleChain;
+    extern std::array<Image, 4> kFlatDiagChain;
 }

@@ -19,17 +19,19 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "model.h"
-#include "palette.h"
+#include "Mesh.hpp"
+#include "Palette.hpp"
 
-void texture_init(texture_t* texture, uint16_t width, uint16_t height)
+namespace RCTGen {
+
+void texture_init(Texture* texture, uint16_t width, uint16_t height)
 {
     texture->width = width;
     texture->height = height;
-    texture->pixels = (vector3_t*)malloc(width * height * sizeof(color_t));
+    texture->pixels = (Vector3*)malloc(width * height * sizeof(Color));
 }
 
-int texture_load_png(texture_t* texture, const char* filename)
+int texture_load_png(Texture* texture, const char* filename)
 {
     FILE* fp = fopen(filename, "rb");
     if (!fp)
@@ -79,11 +81,11 @@ int texture_load_png(texture_t* texture, const char* filename)
 
     png_read_image(png, row_pointers);
 
-    texture->pixels = (vector3_t*)malloc(texture->width * texture->height * sizeof(vector3_t));
+    texture->pixels = (Vector3*)malloc(texture->width * texture->height * sizeof(Vector3));
     for (int y = 0; y < texture->height; y++)
         for (int x = 0; x < texture->width; x++)
         {
-            color_t color = { (uint8_t)row_pointers[y][4 * x],(uint8_t)row_pointers[y][4 * x + 1],(uint8_t)row_pointers[y][4 * x + 2] };
+            Color color = { (uint8_t)row_pointers[y][4 * x],(uint8_t)row_pointers[y][4 * x + 1],(uint8_t)row_pointers[y][4 * x + 2] };
             texture->pixels[x + y * texture->width] = vector_from_color(color);
         }
     for (int y = 0; y < texture->height; y++)
@@ -100,7 +102,7 @@ float wrap_coord(float coord)
     return fmax(0.0, fmin(1.0, coord - floor(coord)));
 }
 
-vector3_t texture_sample(texture_t* texture, vector2_t coord)
+Vector3 texture_sample(Texture* texture, Vector2 coord)
 {
     uint16_t tex_x = (uint32_t)(texture->width * wrap_coord(coord.x));
     uint16_t tex_y = (uint32_t)(texture->height * wrap_coord(coord.y));
@@ -112,15 +114,15 @@ vector3_t texture_sample(texture_t* texture, vector2_t coord)
     return texture->pixels[tex_y * texture->width + tex_x];
 }
 
-void texture_destroy(texture_t* texture)
+void texture_destroy(Texture* texture)
 {
     free(texture->pixels);
 }
 
 
-material_t material_color(vector3_t color, vector3_t specular_color, float specular_exponent, uint8_t flags)
+Material material_color(Vector3 color, Vector3 specular_color, float specular_exponent, uint8_t flags)
 {
-    material_t material;
+    Material material;
     material.flags = flags & (~MATERIAL_HAS_TEXTURE);
     material.color = color;
     material.specular_color = specular_color;
@@ -129,9 +131,9 @@ material_t material_color(vector3_t color, vector3_t specular_color, float specu
     return material;
 }
 
-material_t material_texture(const char* filename, vector3_t specular_color, float specular_exponent, uint8_t flags)
+Material material_texture(const char* filename, Vector3 specular_color, float specular_exponent, uint8_t flags)
 {
-    material_t material;
+    Material material;
     if (texture_load_png(&(material.texture), filename))
     {
         printf("Failed to load %s\n", filename);
@@ -145,7 +147,7 @@ material_t material_texture(const char* filename, vector3_t specular_color, floa
     return material;
 }
 
-int mesh_load_transform(mesh_t* output, const char* filename, matrix_t matrix)
+int mesh_load_transform(Mesh* output, const char* filename, Matrix3 matrix)
 {
     int import_flags = aiProcess_Triangulate | aiProcess_JoinIdenticalVertices | aiProcess_GenNormals;
 
@@ -163,7 +165,7 @@ int mesh_load_transform(mesh_t* output, const char* filename, matrix_t matrix)
     }
 
     output->num_materials = scene->mNumMaterials;
-    output->materials = (material_t*)malloc(scene->mNumMaterials * sizeof(material_t));
+    output->materials = (Material*)malloc(scene->mNumMaterials * sizeof(Material));
 
     for (size_t i = 0; i < scene->mNumMaterials; i++)
     {
@@ -282,10 +284,10 @@ int mesh_load_transform(mesh_t* output, const char* filename, matrix_t matrix)
     printf("Loading model with %d vertices and %d faces\n", output->num_vertices, output->num_faces);
 
     //TODO detect if UVs are not used and do not load them
-    output->vertices = (vector3_t*)malloc(output->num_vertices * sizeof(vector3_t));
-    output->normals = (vector3_t*)malloc(output->num_vertices * sizeof(vector3_t));
-    output->uvs = (vector2_t*)malloc(output->num_vertices * sizeof(vector2_t));
-    output->faces = (face_t*)malloc(output->num_faces * sizeof(face_t));
+    output->vertices = (Vector3*)malloc(output->num_vertices * sizeof(Vector3));
+    output->normals = (Vector3*)malloc(output->num_vertices * sizeof(Vector3));
+    output->uvs = (Vector2*)malloc(output->num_vertices * sizeof(Vector2));
+    output->faces = (Face*)malloc(output->num_faces * sizeof(Face));
 
     size_t mesh_start_vertex = 0;
     size_t mesh_start_face = 0;
@@ -319,7 +321,7 @@ int mesh_load_transform(mesh_t* output, const char* filename, matrix_t matrix)
     return 0;
 }
 
-void mesh_destroy(mesh_t* mesh)
+void mesh_destroy(Mesh* mesh)
 {
     for (uint32_t i = 0; i < mesh->num_materials; i++)
     {
@@ -336,8 +338,10 @@ void mesh_destroy(mesh_t* mesh)
 }
 
 
-int mesh_load(mesh_t* output, const char* filename)
+int mesh_load(Mesh* output, const char* filename)
 {
     return mesh_load_transform(output, filename, matrix_identity());
 }
 
+
+}

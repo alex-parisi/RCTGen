@@ -12,9 +12,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <png.h>
-#include "image.h"
+#include "Image.hpp"
 
-image_palette_t rct2_palette ={256,0,{
+namespace RCTGen {
+
+ImagePalette rct2_palette ={256,0,{
 {0,0,0},//0
 {1,1,1},
 {2,2,2},
@@ -286,7 +288,7 @@ image_palette_t rct2_palette ={256,0,{
 */
 }};
 
-void image_new(image_t* image, uint16_t width, uint16_t height, int16_t x_offset, int16_t y_offset, uint16_t flags)
+void image_new(Image* image, uint16_t width, uint16_t height, int16_t x_offset, int16_t y_offset, uint16_t flags)
 {
 image->width = width;
 image->height = height;
@@ -296,7 +298,7 @@ image->pixels = (uint8_t*)calloc(width * height, sizeof(uint8_t));
 }
 
 
-void image_copy(image_t* src, image_t* dst)
+void image_copy(Image* src, Image* dst)
 {
 dst->width = src->width;
 dst->height = src->height;
@@ -306,7 +308,7 @@ dst->pixels = (uint8_t*)calloc(src->width * src->height, sizeof(uint8_t));
 memmove(dst->pixels, src->pixels, src->width * src->height);
 }
 //TODO prevent writing outside image
-void image_blit(image_t* dst, image_t* src, int16_t x_offset, int16_t y_offset)
+void image_blit(Image* dst, Image* src, int16_t x_offset, int16_t y_offset)
 {
 x_offset += src->x_offset - dst->x_offset;
 y_offset += src->y_offset - dst->y_offset;
@@ -321,7 +323,7 @@ y_offset += src->y_offset - dst->y_offset;
 	}
 }
 
-int image_read_png(image_t* image, FILE* file)
+int image_read_png(Image* image, FILE* file)
 {
 	if (!file)
 	{
@@ -386,7 +388,7 @@ free(row_pointers);
 return 0;
 }
 
-int image_write_png(image_t* image, image_palette_t* palette, FILE* file)
+int image_write_png(Image* image, ImagePalette* palette, FILE* file)
 {
 png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (png_ptr == NULL)return 1;
@@ -432,7 +434,7 @@ png_destroy_write_struct(&png_ptr, &info_ptr);
 return 0;
 }
 
-void image_crop(image_t* image)
+void image_crop(Image* image)
 {
 int x_min = INT32_MAX;
 int x_max = INT32_MIN;
@@ -474,7 +476,9 @@ int y_max = INT32_MIN;
 	}
 }
 
-void image_destroy(image_t* image)
+void image_destroy(Image* image)
 {
 	free(image->pixels);
+}
+
 }

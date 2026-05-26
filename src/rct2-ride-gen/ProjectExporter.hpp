@@ -6,12 +6,11 @@
 #include <filesystem>
 #include <string>
 
-#include "renderer.h"
+#include "Renderer.hpp"
 #include "Project.hpp"
 
 namespace RCTGen {
     using ExportError = std::string;
-    using Context = context_t;
 
     template<class T>
     using ExportResult = std::expected<T, ExportError>;

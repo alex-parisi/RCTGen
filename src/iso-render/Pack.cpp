@@ -1,5 +1,3 @@
-#include "image.h"
-
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -9,10 +7,13 @@
 #include <numeric>
 #include <vector>
 
+#include "Image.hpp"
+
+namespace RCTGen {
 namespace
 {
 
-struct rect_t
+struct PackRect
 {
     int x;
     int y;
@@ -62,7 +63,7 @@ inline void qsort_r_compat(void* base, std::size_t n, std::size_t w, qsort_compa
 template <typename Project>
 int legacy_compare(const void* a, const void* b, void* arg)
 {
-    auto* images = static_cast<image_t*>(arg);
+    auto* images = static_cast<Image*>(arg);
     Project proj{};
     auto ka = proj(images[*static_cast<const int*>(a)]);
     auto kb = proj(images[*static_cast<const int*>(b)]);
@@ -70,33 +71,33 @@ int legacy_compare(const void* a, const void* b, void* arg)
     return ka < kb ? 1 : -1; // descending
 }
 
-struct project_area      { int operator()(const image_t& i) const { return static_cast<int>(i.width) * i.height; } };
-struct project_perimeter { int operator()(const image_t& i) const { return i.width + i.height; } };
-struct project_max_dim   { int operator()(const image_t& i) const { return std::max<int>(i.width, i.height); } };
-struct project_width     { int operator()(const image_t& i) const { return static_cast<int>(i.width); } };
-struct project_height    { int operator()(const image_t& i) const { return static_cast<int>(i.height); } };
+struct project_area      { int operator()(const Image& i) const { return static_cast<int>(i.width) * i.height; } };
+struct project_perimeter { int operator()(const Image& i) const { return i.width + i.height; } };
+struct project_max_dim   { int operator()(const Image& i) const { return std::max<int>(i.width, i.height); } };
+struct project_width     { int operator()(const Image& i) const { return static_cast<int>(i.width); } };
+struct project_height    { int operator()(const Image& i) const { return static_cast<int>(i.height); } };
 
-int pack_rects_fixed_with_comparator(image_t* images, int num_images, int width, int height, int* x_coords, int* y_coords,
+int pack_rects_fixed_with_comparator(Image* images, int num_images, int width, int height, int* x_coords, int* y_coords,
                                      qsort_compare_fn compare)
 {
     std::vector<int> permutation(num_images);
     std::iota(permutation.begin(), permutation.end(), 0);
     qsort_r_compat(permutation.data(), num_images, sizeof(int), compare, images);
 
-    std::vector<rect_t> empty_spaces;
+    std::vector<PackRect> empty_spaces;
     empty_spaces.reserve(10000);
     empty_spaces.push_back({0, 0, width, height});
 
     int i;
     for (i = 0; i < num_images; ++i)
     {
-        image_t* image = images + permutation[i];
+        Image* image = images + permutation[i];
         int j;
         int num_created_rects = -1;
-        rect_t created_rects[2];
+        PackRect created_rects[2];
         for (j = static_cast<int>(empty_spaces.size()) - 1; j >= 0; --j)
         {
-            const rect_t space = empty_spaces[j];
+            const PackRect space = empty_spaces[j];
             x_coords[permutation[i]] = space.x;
             y_coords[permutation[i]] = space.y;
             if (space.width > image->width && space.height > image->height)
@@ -141,7 +142,7 @@ int pack_rects_fixed_with_comparator(image_t* images, int num_images, int width,
     return 1;
 }
 
-int pack_rects_fixed(image_t* images, int num_images, int width, int height, int* x_coords, int* y_coords)
+int pack_rects_fixed(Image* images, int num_images, int width, int height, int* x_coords, int* y_coords)
 {
     if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, &legacy_compare<project_area>))      return 1;
     if (pack_rects_fixed_with_comparator(images, num_images, width, height, x_coords, y_coords, &legacy_compare<project_perimeter>)) return 1;
@@ -151,7 +152,7 @@ int pack_rects_fixed(image_t* images, int num_images, int width, int height, int
     return 0;
 }
 
-void pack_rects(image_t* images, int num_images, int* width_ptr, int* height_ptr, int* x_coords, int* y_coords)
+void pack_rects(Image* images, int num_images, int* width_ptr, int* height_ptr, int* x_coords, int* y_coords)
 {
     int size = 256;
     while (!pack_rects_fixed(images, num_images, size, size, x_coords, y_coords)) size *= 2;
@@ -202,7 +203,7 @@ void pack_rects(image_t* images, int num_images, int* width_ptr, int* height_ptr
 
 } // namespace
 
-void image_create_atlas(image_t* output, image_t* images, int num_images, int* x_coords, int* y_coords)
+void image_create_atlas(Image* output, Image* images, int num_images, int* x_coords, int* y_coords)
 {
     int width, height;
     pack_rects(images, num_images, &width, &height, x_coords, y_coords);
@@ -222,7 +223,7 @@ void image_create_atlas(image_t* output, image_t* images, int num_images, int* x
     std::printf("Packing efficiency %.01f%%\n", (100.0 * used_pixels) / (width * height));
 }
 
-void image_create_grid(image_t* output, image_t* images, int num_images, int* /*x_coords*/, int* /*y_coords*/, int columns)
+void image_create_grid(Image* output, Image* images, int num_images, int* /*x_coords*/, int* /*y_coords*/, int columns)
 {
     int x_min = 0;
     int x_max = 0;
@@ -259,4 +260,6 @@ void image_create_grid(image_t* output, image_t* images, int num_images, int* /*
     }
 
     std::printf("Width %d Height %d\n", width, height);
+}
+
 }

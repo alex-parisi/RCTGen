@@ -15,8 +15,8 @@
 #include <jansson.h>
 #include <zip.h>
 
-#include "image.h"
-#include "model.h"
+#include "Image.hpp"
+#include "Mesh.hpp"
 #include "Constants.hpp"
 #include "Json.hpp"
 #include "Logging.hpp"
@@ -26,7 +26,6 @@
 namespace fs = std::filesystem;
 
 namespace RCTGen {
-    using Context = context_t;
 
     namespace {
         // friction_sound_id table, indexed by the running_sound enum from JSON.
@@ -51,7 +50,7 @@ namespace RCTGen {
                 auto [x, y, z] = vector3_mult(orientation, std::numbers::pi / 180.0);
                 context_add_model(
                     &context,
-                    const_cast<mesh_t *>(&project.meshes[mesh_index]),
+                    const_cast<Mesh *>(&project.meshes[mesh_index]),
                     transform(
                         matrix_mult(
                             rotate_y(x),
@@ -267,7 +266,7 @@ namespace RCTGen {
                 const int num_car_images = countSprites(sf, vf);
                 const int num_images = num_car_images * (1 + static_cast<int>(vehicle.riders.size()));
 
-                std::vector images(num_images, image_t{});
+                std::vector images(num_images, Image{});
 
                 printMsg("Rendering car sprites");
                 int base = 0;
@@ -296,7 +295,7 @@ namespace RCTGen {
                     }
                 }
 
-                image_t atlas;
+                Image atlas;
                 std::vector x_coords(num_images, 0);
                 std::vector y_coords(num_images, 0);
                 image_create_atlas(&atlas, images.data(), num_images,
@@ -437,7 +436,7 @@ namespace RCTGen {
             const int num_frames = has_flag(vf, VehicleFlag::restraintAnimation) ? 4 : 1;
             for (int j = 0; j < num_frames; j++) {
                 printMsg("Rendering vehicle {} frame {}", i, j);
-                image_t image;
+                Image image;
                 context_begin_render(&context);
                 addModelToContext(project, context, vehicle.model, j, 0);
                 for (const Model &rider: vehicle.riders) {

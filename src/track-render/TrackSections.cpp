@@ -46,7 +46,7 @@ namespace RCTGen {
         return 6.0 * x * a + 2.0 * b;
     }
 
-    TrackPoint plane_curve_vertical(vector3_t position, vector3_t tangent) {
+    TrackPoint plane_curve_vertical(Vector3 position, Vector3 tangent) {
         TrackPoint point;
         point.position = position;
         point.tangent = tangent;
@@ -55,7 +55,7 @@ namespace RCTGen {
         return point;
     }
 
-    TrackPoint plane_curve_vertical_diagonal(vector3_t position, vector3_t tangent) {
+    TrackPoint plane_curve_vertical_diagonal(Vector3 position, Vector3 tangent) {
         TrackPoint point;
         point.position = position;
         point.tangent = tangent;
@@ -64,7 +64,7 @@ namespace RCTGen {
         return point;
     }
 
-    TrackPoint plane_curve_horizontal(vector3_t position, vector3_t tangent) {
+    TrackPoint plane_curve_horizontal(Vector3 position, Vector3 tangent) {
         TrackPoint point;
         point.position = position;
         point.tangent = tangent;
@@ -140,15 +140,15 @@ namespace RCTGen {
              float zc, float zd, float ra, float rb, float rc, float rd, float pa, float pb, float pc, float pd,
              float pe, float pf, float pg, float distance) {
         float u = reparameterize(pa, pb, pc, pd, pe, pf, pg, distance);
-        vector3_t point = vector3(cubic(xa, xb, xc, xd, u), cubic(ya, yb, yc, yd, u), cubic(za, zb, zc, zd, u));
-        vector3_t tangent = vector3_normalize(vector3(cubic_derivative(xa, xb, xc, u), cubic_derivative(ya, yb, yc, u),
+        Vector3 point = vector3(cubic(xa, xb, xc, xd, u), cubic(ya, yb, yc, yd, u), cubic(za, zb, zc, zd, u));
+        Vector3 tangent = vector3_normalize(vector3(cubic_derivative(xa, xb, xc, u), cubic_derivative(ya, yb, yc, u),
                                                       cubic_derivative(za, zb, zc, u)));
-        vector3_t second_derivative = vector3(cubic_second_derivative(xa, xb, u), cubic_second_derivative(ya, yb, u),
+        Vector3 second_derivative = vector3(cubic_second_derivative(xa, xb, u), cubic_second_derivative(ya, yb, u),
                                               cubic_second_derivative(za, zb, u));
-        vector3_t normal = vector3_normalize(vector3_sub(second_derivative,
+        Vector3 normal = vector3_normalize(vector3_sub(second_derivative,
                                                          vector3_mult(
                                                              tangent, vector3_dot(tangent, second_derivative))));
-        vector3_t binormal = vector3_cross(normal, tangent);
+        Vector3 binormal = vector3_cross(normal, tangent);
 
         TrackPoint track_point;
         float angle = cubic(ra, rb, rc, rd, u);

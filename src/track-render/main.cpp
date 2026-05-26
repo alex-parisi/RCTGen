@@ -14,10 +14,10 @@
 
 #include <jansson.h>
 
-#include "image.h"
-#include "model.h"
-#include "renderer.h"
-#include "vectormath.h"
+#include "Image.hpp"
+#include "Mesh.hpp"
+#include "Renderer.hpp"
+#include "VectorMath.hpp"
 
 #include "Constants.hpp"
 #include "Json.hpp"
@@ -35,7 +35,7 @@ namespace {
 
     // Returns 0 on success, 1 on error, 2 if the mesh entry is absent (caller
     // treats absent as "not loaded").
-    int loadModelFile(mesh_t *out, const Json *parent, const char *name) {
+    int loadModelFile(Mesh *out, const Json *parent, const char *name) {
         const Json *mesh = json_object_get(parent, name);
         if (mesh == nullptr) return 2;
         if (!json_is_string(mesh)) {
@@ -315,11 +315,11 @@ namespace {
         return {};
     }
 
-    LoadResult<std::vector<light_t> > loadLightsArray(Json *array) {
+    LoadResult<std::vector<Light> > loadLightsArray(Json *array) {
         if (!json_is_array(array)) {
             return std::unexpected(std::string("Property \"lights\" is not an array"));
         }
-        std::vector<light_t> lights;
+        std::vector<Light> lights;
         lights.reserve(json_array_size(array));
         for (std::size_t i = 0; i < json_array_size(array); i++) {
             Json *light = json_array_get(array, i);
@@ -327,7 +327,7 @@ namespace {
                 printMsg("Warning: Light array contains an element which is not an object - ignoring");
                 continue;
             }
-            light_t out{};
+            Light out{};
             auto type = readString(json_object_get(light, "type"), "type");
             if (!type) return std::unexpected(type.error());
             if (*type == "diffuse") out.type = LIGHT_DIFFUSE;
@@ -351,7 +351,7 @@ namespace {
         return lights;
     }
 
-    std::vector<light_t> defaultLights() {
+    std::vector<Light> defaultLights() {
         return {
             {LIGHT_DIFFUSE, 0, vector3(0.0f, -1.0f, 0.0f).normalized(), 0.25f},
             {LIGHT_DIFFUSE, 0, vector3(1.0f, 0.3f, 0.0f).normalized(), 0.32f},
@@ -400,7 +400,7 @@ int main(int argc, char **argv) {
     auto spritefileOut = readString(json_object_get(json, "spritefile_out"), "spritefile_out");
     if (!spritefileOut) printMsg("Error: {}", spritefileOut.error());
 
-    std::vector<light_t> lights = defaultLights();
+    std::vector<Light> lights = defaultLights();
     if (Json *lightArray = json_object_get(json, "lights"); lightArray != nullptr) {
         auto loaded = loadLightsArray(lightArray);
         if (!loaded) {
@@ -446,7 +446,7 @@ int main(int argc, char **argv) {
     }
     Json *sprites = spritesRef->get();
 
-    context_t context;
+    Context context;
     context_init(&context, lights.data(), static_cast<std::uint32_t>(lights.size()),
                  dither, palette_rct2(), kTileSize);
 

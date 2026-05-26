@@ -34,11 +34,11 @@
 
 namespace RCTGen {
     namespace {
-        vector3_t startOffset;
-        vector3_t endOffset;
+        Vector3 startOffset;
+        Vector3 endOffset;
 
-        vector3_t changeCoordinates(vector3_t a) {
-            vector3_t result = {a.z, a.y, a.x};
+        Vector3 changeCoordinates(Vector3 a) {
+            Vector3 result = {a.z, a.y, a.x};
             return result;
         }
 
@@ -88,14 +88,14 @@ namespace RCTGen {
             return output;
         }
 
-        vertex_t trackTransform(vector3_t vertex, vector3_t normal, const bool flatShaded, void *data) {
+        Vertex trackTransform(Vector3 vertex, Vector3 normal, const bool flatShaded, void *data) {
             TrackTransformArgs args = *static_cast<TrackTransformArgs *>(data);
 
             vertex.z = args.scale * vertex.z + args.offset;
 
             TrackPoint trackPoint = getTrackPoint(args.trackCurve, args.flags, args.zOffset, args.length, vertex.z);
 
-            vertex_t out;
+            Vertex out;
             out.vertex = changeCoordinates(vector3_add(trackPoint.position,
                                                        vector3_add(vector3_mult(trackPoint.normal, vertex.y),
                                                                    vector3_mult(trackPoint.binormal, vertex.x))));
@@ -114,7 +114,7 @@ namespace RCTGen {
             return out;
         }
 
-        vertex_t baseTransform(vector3_t vertex, vector3_t normal, const bool /*flatShaded*/, void *data) {
+        Vertex baseTransform(Vector3 vertex, Vector3 normal, const bool /*flatShaded*/, void *data) {
             TrackTransformArgs args = *static_cast<TrackTransformArgs *>(data);
 
             vertex.z = args.scale * vertex.z + args.offset;
@@ -124,7 +124,7 @@ namespace RCTGen {
             trackPoint.binormal = vector3_normalize(vector3_cross(vector3(0, 1, 0), trackPoint.tangent));
             trackPoint.normal = vector3_normalize(vector3_cross(trackPoint.tangent, trackPoint.binormal));
 
-            vertex_t out;
+            Vertex out;
             out.vertex = changeCoordinates(vector3_add(trackPoint.position,
                                                        vector3_add(vector3_mult(vector3(0, 1, 0), vertex.y),
                                                                    vector3_mult(trackPoint.binormal, vertex.x))));
@@ -189,8 +189,8 @@ namespace RCTGen {
             return (type->modelsLoaded & (1u << std::to_underlying(m))) != 0;
         }
 
-        void renderTrackSection(context_t *context, TrackSection *section, TrackType *trackType,
-                                ViewFlag viewFlags, int trackMask, int renderedViews, image_t *images) {
+        void renderTrackSection(Context *context, TrackSection *section, TrackType *trackType,
+                                ViewFlag viewFlags, int trackMask, int renderedViews, Image *images) {
             int numMeshes = static_cast<int>(std::floor(0.5 + section->length / trackType->length));
             float scale = section->length / (numMeshes * trackType->length);
 
@@ -210,8 +210,8 @@ namespace RCTGen {
             float length = scale * trackType->length;
             float zOffset = ((trackType->zOffset / 8.0) * kClearanceHeight);
 
-            mesh_t *mesh = &trackType->mesh;
-            mesh_t *meshTie = &trackType->meshTie;
+            Mesh *mesh = &trackType->mesh;
+            Mesh *meshTie = &trackType->meshTie;
 
             context_begin_render(context);
 
@@ -360,7 +360,7 @@ namespace RCTGen {
             if (any_of(section->flags, TrackFlag::specialMask)) {
                 TrackModel idx = getSpecialIndex(section->flags);
                 if (modelLoaded(trackType, idx)) {
-                    matrix_t mat = views[1];
+                    Matrix3 mat = views[1];
                     TrackFlag s = section->flags & TrackFlag::specialMask;
                     if (s != TrackFlag::specialVerticalTwistRight
                         && s != TrackFlag::specialBarrelRollRight
@@ -423,12 +423,12 @@ namespace RCTGen {
 
                     TrackPoint supportPoint = onlyYaw(trackPoint);
 
-                    matrix_t rotation = matrix(supportPoint.binormal.x, supportPoint.normal.x, supportPoint.tangent.x,
+                    Matrix3 rotation = matrix(supportPoint.binormal.x, supportPoint.normal.x, supportPoint.tangent.x,
                                                supportPoint.binormal.y, supportPoint.normal.y, supportPoint.tangent.y,
                                                supportPoint.binormal.z, supportPoint.normal.z, supportPoint.tangent.z);
                     if (bankAngle >= 0) rotation = matrix_mult(views[2], rotation);
 
-                    vector3_t translation = changeCoordinates(supportPoint.position);
+                    Vector3 translation = changeCoordinates(supportPoint.position);
                     translation.y -= trackType->pivot / sqrt(
                                 trackPoint.tangent.x * trackPoint.tangent.x + trackPoint.tangent.z * trackPoint.tangent.
                                 z) -
@@ -459,7 +459,7 @@ namespace RCTGen {
             return false;
         }
 
-        bool compareVec(vector3_t a, vector3_t b, int rot) {
+        bool compareVec(Vector3 a, Vector3 b, int rot) {
             return vector3_norm(vector3_sub(a, vector3_normalize(matrix_vector(views[rot], b)))) < 0.15;
         }
 
@@ -498,13 +498,13 @@ namespace RCTGen {
             return 0xFF;
         }
 
-        vector3_t getOffset(int table, int viewAngle, std::span<const float, 88> offsetTable) {
+        Vector3 getOffset(int table, int viewAngle, std::span<const float, 88> offsetTable) {
             int index = table & 0xF;
             int endAngle = table >> 5;
             int right = (table & 0x10) >> 4;
             int rotatedViewAngle = (viewAngle + endAngle + 2 * right) % 4;
 
-            vector3_t offset = vector3(0, 0, 0);
+            Vector3 offset = vector3(0, 0, 0);
             if (table == 0xFF) return offset;
 
             offset.x = 0;
@@ -533,7 +533,7 @@ namespace RCTGen {
             return ((k % n) + n) % n;
         }
 
-        void applyLift(image_t *image, image_t *pattern) {
+        void applyLift(Image *image, Image *pattern) {
             for (int x = 0; x < image->width; x++) {
                 for (int y = 0; y < image->height; y++) {
                     std::uint8_t pixel = image->pixels[y * image->width + x];
@@ -546,7 +546,7 @@ namespace RCTGen {
             }
         }
 
-        void writeTrackSection(context_t *context, TrackSectionId id, TrackType *trackType,
+        void writeTrackSection(Context *context, TrackSectionId id, TrackType *trackType,
                                std::span<const float, 88> offsetTable,
                                const std::filesystem::path &baseDir,
                                const std::filesystem::path &outputDir,
@@ -556,8 +556,8 @@ namespace RCTGen {
             View *views_ = trackType->masks_[sectionIdx].data();
 
             int zOffsetInt = static_cast<int>(trackType->zOffset + 0.499999);
-            image_t fullSprites[4];
-            image_t trackMasks[4];
+            Image fullSprites[4];
+            Image trackMasks[4];
             for (int i = 0; i < 4; i++) {
                 if (views_[i].numSprites == 0) continue;
                 if (has_flag(trackType->flags, TrackTypeFlag::specialOffsets)) {
@@ -594,7 +594,7 @@ namespace RCTGen {
                     std::string final = std::format("{}{}", baseDir.string(), relative);
                     printMsg("{}", final);
 
-                    image_t partSprite;
+                    Image partSprite;
                     image_copy(fullSprites + angle, &partSprite);
                     if (view->masks != nullptr) {
                         for (int x = 0; x < fullSprites[angle].width; x++) {
@@ -670,7 +670,7 @@ namespace RCTGen {
         // the byte-equivalent contract: regression goldens are keyed on the
         // PNG filenames, so adding/removing/reordering sections changes the
         // output even though byte contents would not.
-        void writeGroup(context_t *context, TrackType *trackType,
+        void writeGroup(Context *context, TrackType *trackType,
                         std::span<const float, 88> offsetTable,
                         const std::filesystem::path &baseDir,
                         const std::filesystem::path &outputDir,
@@ -681,7 +681,7 @@ namespace RCTGen {
         }
     } // namespace
 
-    int writeTrackType(context_t *context, TrackType *trackType, json_t *sprites,
+    int writeTrackType(Context *context, TrackType *trackType, json_t *sprites,
                        std::span<const float, 88> offsetTable,
                        const std::filesystem::path &baseDir,
                        const std::filesystem::path &outputDir) {

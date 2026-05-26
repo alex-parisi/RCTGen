@@ -2651,13 +2651,13 @@ sprite_rotation_t base_sprite_rotations[708]=
         zero_g_other_sprite_rotations, dive_loop_sprite_rotations
     };
 
-    matrix_t track_point_get_rotation(TrackPoint point) {
+    Matrix3 track_point_get_rotation(TrackPoint point) {
         return matrix(point.tangent.z, point.normal.z, -point.binormal.z, point.tangent.y, point.normal.y,
                       -point.binormal.y, point.tangent.x, point.normal.x, -point.binormal.x);
     }
 
-    float get_rotation_distance(matrix_t a, matrix_t b) {
-        matrix_t diff = matrix_mult(a, matrix_transpose(b));
+    float get_rotation_distance(Matrix3 a, Matrix3 b) {
+        Matrix3 diff = matrix_mult(a, matrix_transpose(b));
         float arg = (diff.entries[0] + diff.entries[4] + diff.entries[8] - 1.0) / 2.0;
         if (arg <= -1)return M_PI;
         else if (arg >= 1.0)return 0;
@@ -2665,11 +2665,11 @@ sprite_rotation_t base_sprite_rotations[708]=
     }
 
 
-    void print_euler(matrix_t rotation) {
-        vector3_t tangent = vector3(rotation.entries[6], rotation.entries[3], rotation.entries[0]);
-        vector3_t normal = vector3(rotation.entries[7], rotation.entries[4], rotation.entries[1]);
-        vector3_t binormal_upright = vector3_normalize(vector3_cross(tangent, vector3(0, 1, 0)));
-        vector3_t normal_upright = vector3_cross(tangent, binormal_upright);
+    void print_euler(Matrix3 rotation) {
+        Vector3 tangent = vector3(rotation.entries[6], rotation.entries[3], rotation.entries[0]);
+        Vector3 normal = vector3(rotation.entries[7], rotation.entries[4], rotation.entries[1]);
+        Vector3 binormal_upright = vector3_normalize(vector3_cross(tangent, vector3(0, 1, 0)));
+        Vector3 normal_upright = vector3_cross(tangent, binormal_upright);
         float yaw = atan2(-tangent.x, tangent.z);
         float pitch = atan2(tangent.y, sqrt(tangent.x * tangent.x + tangent.z * tangent.z));
         float roll = atan2(-vector3_dot(normal, binormal_upright), -vector3_dot(normal, normal_upright));
@@ -2677,7 +2677,7 @@ sprite_rotation_t base_sprite_rotations[708]=
     }
 
 
-    sprite_rotation_t get_closest_rotation(matrix_t rotation, int groups) {
+    sprite_rotation_t get_closest_rotation(Matrix3 rotation, int groups) {
         //	putchar('\n');
         //	print_euler(rotation);
 
@@ -2690,7 +2690,7 @@ sprite_rotation_t base_sprite_rotations[708]=
             const sprite_rotation_t *sprite_rotations = sprite_group_rotations[j];
             //printf("Sprite group %d\n",j)
             for (int i = 0; i < sprite_group_counts[j]; i++) {
-                matrix_t candidate_rotation = matrix_mult(
+                Matrix3 candidate_rotation = matrix_mult(
                     matrix_mult(rotate_y(sprite_rotations[i].yaw), rotate_z(sprite_rotations[i].pitch)),
                     rotate_x(sprite_rotations[i].roll));
 
@@ -2710,7 +2710,7 @@ sprite_rotation_t base_sprite_rotations[708]=
 		for(int k=0; k<15; k++)
 		{
 		sprite_rotation_t sprite_rotation={i,pitch_numbers[j],k,(float)Y(i),pitch_angles[j],bank_angles[k]};
-		matrix_t candidate_rotation=matrix_mult(matrix_mult(rotate_y(sprite_rotation.yaw),rotate_z(sprite_rotation.pitch)),rotate_x(sprite_rotation.roll));
+		Matrix3 candidate_rotation=matrix_mult(matrix_mult(rotate_y(sprite_rotation.yaw),rotate_z(sprite_rotation.pitch)),rotate_x(sprite_rotation.roll));
 			float dist=get_rotation_distance(rotation,candidate_rotation);
 			if(dist<min_dist)
 			{
@@ -2735,7 +2735,7 @@ sprite_rotation_t base_sprite_rotations[708]=
         TrackPoint x = track_section->curve(dist);
         TrackPoint y = track_section->curve(dist + h);
 
-        vector3_t curvature = vector3_mult(vector3_sub(x.tangent, y.tangent), 1 / h);
+        Vector3 curvature = vector3_mult(vector3_sub(x.tangent, y.tangent), 1 / h);
 
         float vertical_factor = -vector3_dot(curvature, x.normal);
         float lateral_factor = vector3_dot(curvature, x.binormal);
@@ -2762,7 +2762,7 @@ sprite_rotation_t base_sprite_rotations[708]=
         int z;
     } coord_t;
 
-    coord_t get_subposition(vector3_t point, int view, int diag) {
+    coord_t get_subposition(Vector3 point, int view, int diag) {
         coord_t sub;
         sub.x = (int) round(32.0 * point.z / kTileSize);
         sub.y = (int) round(32.0 * point.x / kTileSize);
@@ -2822,8 +2822,8 @@ sprite_rotation_t base_sprite_rotations[708]=
         return n;
     }
 
-    TrackPoint get_track_point(TrackSection *track_section, float progress, int reverse, matrix_t reverse_transform,
-                               vector3_t reverse_offset) {
+    TrackPoint get_track_point(TrackSection *track_section, float progress, int reverse, Matrix3 reverse_transform,
+                               Vector3 reverse_offset) {
         TrackPoint point;
         if (!reverse)point = track_section->curve(progress);
         else {
@@ -2849,8 +2849,8 @@ sprite_rotation_t base_sprite_rotations[708]=
         int finish_angle = (int) roundf(4.0 * atan2(-end.tangent.x, end.tangent.z) / M_PI);
         if (finish_angle < 0)finish_angle += 8;
 
-        matrix_t reverse_transform;
-        vector3_t reverse_offset;
+        Matrix3 reverse_transform;
+        Vector3 reverse_offset;
         if (reverse) {
             reverse_transform = rotate_y(M_PI_4 * ((finish_angle & 0xFE) + 4));
             reverse_offset = end.position;

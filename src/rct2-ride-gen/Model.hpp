@@ -6,18 +6,18 @@
 #include <cstdint>
 #include <vector>
 
-#include "vectormath.h"
+#include "VectorMath.hpp"
 
-using Vector3 = vector3_t;
+namespace RCTGen {
+    struct Model {
+        static constexpr std::size_t kMaxFrames = 4;
 
-struct Model {
-    static constexpr std::size_t kMaxFrames = 4;
+        struct MeshFrame {
+            std::int32_t mesh_index = -1;
+            Vector3 position{};
+            Vector3 orientation{};
+        };
 
-    struct MeshFrame {
-        std::int32_t mesh_index = -1;
-        Vector3 position{};
-        Vector3 orientation{};
+        std::vector<std::array<MeshFrame, kMaxFrames> > meshes;
     };
-
-    std::vector<std::array<MeshFrame, kMaxFrames> > meshes;
-};
+}

@@ -8,8 +8,8 @@
 #include <span>
 #include <utility>
 
-#include "image.h"
-#include "model.h"
+#include "Image.hpp"
+#include "Mesh.hpp"
 #include "Constants.hpp"
 #include "Json.hpp"
 #include "Logging.hpp"
@@ -18,8 +18,6 @@
 
 namespace RCTGen {
     using Json = json_t;
-    using Light = light_t;
-    using Mesh = mesh_t;
 
     namespace {
         constexpr int kRestraintFrameCount = 4;
@@ -245,7 +243,7 @@ namespace RCTGen {
             }
 
             // position & orientation share a structure: 3 components or num_frames vectors.
-            for (auto [key, field]: std::array<std::pair<const char *, vector3_t Model::MeshFrame::*>, 2>{
+            for (auto [key, field]: std::array<std::pair<const char *, Vector3 Model::MeshFrame::*>, 2>{
                      {
                          {"position", &Model::MeshFrame::position},
                          {"orientation", &Model::MeshFrame::orientation},

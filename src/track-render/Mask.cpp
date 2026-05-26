@@ -13,7 +13,7 @@
 
 #include <jansson.h>
 
-#include "image.h"
+#include "Image.hpp"
 #include "Json.hpp"
 #include "Logging.hpp"
 
@@ -23,20 +23,20 @@ namespace RCTGen {
         constexpr std::size_t kMaxMasks = 2040;
 
         struct MaskList {
-            rect_t *rects;
+            Rect *rects;
             Mask *masks;
             ViewSet *views;
         };
 
-        char maskIndex(const image_t *mask, int x, int y, int s) {
+        char maskIndex(const Image *mask, int x, int y, int s) {
             if (s == 0)
                 return mask->pixels[x + y * mask->width] & 0x7;
             return (mask->pixels[x + y * mask->width] & 0x38) >> 3;
         }
 
-        void maskListAddRects(MaskList *list, int *total, const rect_t *rects, int count) {
+        void maskListAddRects(MaskList *list, int *total, const Rect *rects, int count) {
             assert(static_cast<std::size_t>(*total) < kMaxRects);
-            std::memcpy(list->rects + *total, rects, count * sizeof(rect_t));
+            std::memcpy(list->rects + *total, rects, count * sizeof(Rect));
             *total += count;
         }
 
@@ -48,7 +48,7 @@ namespace RCTGen {
 
         // Push a rect into the list, applying mirror transform and merging with
         // an existing rect that shares the same X-band and stacks vertically.
-        void addRect(image_t *mask, int mirror, rect_t rect, rect_t *rects, int *numRects) {
+        void addRect(Image *mask, int mirror, Rect rect, Rect *rects, int *numRects) {
             if (mirror) {
                 int temp = rect.x_upper;
                 if (rect.x_lower == 0) rect.x_upper = INT32_MAX;
@@ -78,20 +78,20 @@ namespace RCTGen {
             (*numRects)++;
         }
 
-        void processSlice(image_t *mask, int mirror, int y, char sprite,
-                          rect_t *rects, int *numRects, int s) {
+        void processSlice(Image *mask, int mirror, int y, char sprite,
+                          Rect *rects, int *numRects, int s) {
             int startX = -1;
             for (int x = 0; x < mask->width; x++) {
                 if (maskIndex(mask, x, y, s) == sprite && startX == -1) startX = x;
 
                 if (maskIndex(mask, x, y, s) != sprite && startX >= 0) {
-                    rect_t rect = {startX, y, x, y + 1};
+                    Rect rect = {startX, y, x, y + 1};
                     addRect(mask, mirror, rect, rects, numRects);
                     startX = -1;
                 }
 
                 if (x == mask->width - 1 && startX >= 0) {
-                    rect_t rect = {startX, y, x + 1, y + 1};
+                    Rect rect = {startX, y, x + 1, y + 1};
                     addRect(mask, mirror, rect, rects, numRects);
                 }
             }
@@ -108,13 +108,13 @@ namespace RCTGen {
         };
 
         [[nodiscard]] JsonResult<void> processMask(
-            image_t *mask, const ProcessOpts &opts,
+            Image *mask, const ProcessOpts &opts,
             View *view, MaskList *list, int *numMasksTotal, int *numRectsTotal) {
             int numSprites = opts.numSprites;
-            rect_t *rects = static_cast<rect_t *>(
-                std::malloc(sizeof(rect_t) * (mask->width * mask->height + 1) / 2));
-            rect_t *secondaryRects = static_cast<rect_t *>(
-                std::malloc(sizeof(rect_t) * (mask->width * mask->height + 1) / 2));
+            Rect *rects = static_cast<Rect *>(
+                std::malloc(sizeof(Rect) * (mask->width * mask->height + 1) / 2));
+            Rect *secondaryRects = static_cast<Rect *>(
+                std::malloc(sizeof(Rect) * (mask->width * mask->height + 1) / 2));
 
             // Find origin point and sprite count.
             int offsetFound = 0;
@@ -342,7 +342,7 @@ namespace RCTGen {
         int numRects = 0;
         int numMasks = 0;
         MaskList list{};
-        list.rects = static_cast<rect_t *>(std::calloc(kMaxRects, sizeof(rect_t)));
+        list.rects = static_cast<Rect *>(std::calloc(kMaxRects, sizeof(Rect)));
         list.masks = static_cast<Mask *>(std::calloc(kMaxMasks, sizeof(Mask)));
         list.views = views.data();
         std::memset(list.views, 0, kNumTrackSections * sizeof(ViewSet));
@@ -376,7 +376,7 @@ namespace RCTGen {
                         "Could not open {}", maskPath));
                 }
 
-                image_t image;
+                Image image;
                 if (image_read_png(&image, file) != 0) {
                     std::fclose(file);
                     return std::unexpected(std::format(

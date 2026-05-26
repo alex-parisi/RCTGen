@@ -11,7 +11,7 @@
 
 #include <jansson.h>
 
-#include "vectormath.h"
+#include "VectorMath.hpp"
 
 namespace RCTGen {
     using JsonError = std::string;
@@ -48,7 +48,7 @@ namespace RCTGen {
 
     [[nodiscard]] JsonResult<double> readNumber(const Json *value, std::string_view property);
 
-    [[nodiscard]] JsonResult<vector3_t> readVector3(const Json *array);
+    [[nodiscard]] JsonResult<Vector3> readVector3(const Json *array);
 
     [[nodiscard]] JsonResult<std::uint32_t> readEnumIndex(
         const Json *value,

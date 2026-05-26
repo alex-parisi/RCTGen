@@ -11,9 +11,9 @@
 
 #include <jansson.h>
 
-#include "model.h"
-#include "renderer.h"
-#include "vectormath.h"
+#include "Mesh.hpp"
+#include "Renderer.hpp"
+#include "VectorMath.hpp"
 
 #include "Constants.hpp"
 
@@ -23,7 +23,7 @@ namespace RCTGen {
         std::uint32_t numRects = 0;
         std::int32_t xOffset = 0;
         std::int32_t yOffset = 0;
-        rect_t *rects = nullptr;
+        Rect *rects = nullptr;
     };
 
     struct View {
@@ -40,11 +40,11 @@ namespace RCTGen {
         TrackGroup groups = TrackGroup::none;
         std::int32_t liftOffset = 0;
         std::uint32_t modelsLoaded = 0;
-        mesh_t mesh{};
-        mesh_t meshTie{};
-        mesh_t tieMesh{};
-        mesh_t mask{};
-        std::array<mesh_t, kNumModels> models{};
+        Mesh mesh{};
+        Mesh meshTie{};
+        Mesh tieMesh{};
+        Mesh mask{};
+        std::array<Mesh, kNumModels> models{};
         float length = 0.0f;
         float brakeLength = 0.0f;
         float tieLength = 0.0f;
@@ -56,10 +56,10 @@ namespace RCTGen {
     };
 
     struct TrackPoint {
-        vector3_t position;
-        vector3_t normal;
-        vector3_t tangent;
-        vector3_t binormal;
+        Vector3 position;
+        Vector3 normal;
+        Vector3 tangent;
+        Vector3 binormal;
     };
 
     using CurveFn = TrackPoint (*)(float distance);
@@ -69,7 +69,7 @@ namespace RCTGen {
         TrackFlag flags;
         CurveFn curve;
         float length;
-        image_t *chainPattern;
+        Image *chainPattern;
     };
 
     extern std::array<TrackSection, kNumTrackSections> kTrackSections;
@@ -77,7 +77,7 @@ namespace RCTGen {
     // Render every track section enabled by track_type->groups and append
     // each emitted sprite to `sprites` as a JSON object.
     int writeTrackType(
-        context_t *context,
+        Context *context,
         TrackType *trackType,
         json_t *sprites,
         std::span<const float, 88> offsetTable,

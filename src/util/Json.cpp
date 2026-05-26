@@ -85,11 +85,11 @@ namespace RCTGen {
         return json_number_value(value);
     }
 
-    JsonResult<vector3_t> readVector3(const Json *array) {
+    JsonResult<Vector3> readVector3(const Json *array) {
         if (array == nullptr || !json_is_array(array) || json_array_size(array) != 3) {
             return std::unexpected(std::string("Vector must be an array of 3 numbers"));
         }
-        vector3_t v{};
+        Vector3 v{};
         float *components[3] = {&v.x, &v.y, &v.z};
         for (std::size_t i = 0; i < 3; i++) {
             const Json *elem = json_array_get(array, i);

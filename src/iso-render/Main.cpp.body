@@ -12,7 +12,6 @@
 #include "Mesh.hpp"
 #include "Renderer.hpp"
 
-namespace RCTGen {
 namespace
 {
 
@@ -324,7 +323,7 @@ void project_add_model_to_context(project_t* project, Context* context, model_t*
 
 int project_export(project_t* project, Context* context, json_t* sprites, const char* base_dir, const char* output_dir)
 {
-    Image images[4 * MAX_FRAMES];
+    image_t images[4 * MAX_FRAMES];
 
     for (std::uint32_t i = 0; i < project->num_items; ++i)
     {
@@ -379,11 +378,9 @@ int project_export(project_t* project, Context* context, json_t* sprites, const 
 }
 
 } // namespace
-} // namespace RCTGen
 
 int main(int argc, char* argv[])
 {
-    using namespace RCTGen;
     project_t project{};
 
     json_error_t error;

@@ -1,6 +1,6 @@
 // Verbatim port of the C-era raytrace implementation, adapted only to the
-// modernized raytrace.h (std::bitset<MAX_MESHES> for scene_t::mask and
-// scene_t::ghost instead of uint64_t[2]; std::uint32_t-typed counts). All
+// modernized raytrace.h (std::bitset<kMaxMeshes> for Scene::mask and
+// Scene::ghost instead of uint64_t[2]; std::uint32_t-typed counts). All
 // AO sampling, intersection filtering, and ray-tracing math is left exactly
 // as written -- this file is the source of truth for byte-equivalent ray
 // hits / occlusion against the goldens captured pre-modernization (see
@@ -17,7 +17,7 @@
 #include <math.h>
 #include <assert.h>
 #include <embree4/rtcore.h>
-#include "raytrace.h"
+#include "RayTrace.hpp"
 
 #ifdef min
 #undef min
@@ -31,15 +31,17 @@
 
 //&& rayhit.hit.Ng_x*direction.x+rayhit.hit.Ng_y*direction.y+rayhit.hit.Ng_z*direction.z<0
 
+namespace RCTGen {
+
 void rt_error(void* user_ptr, enum RTCError error, const char* str)
 {
     printf("error %d: %s\n", error, str);
     exit(1);
 }
 
-device_t device_init()
+Device device_init()
 {
-    device_t device = rtcNewDevice(NULL);
+    Device device = rtcNewDevice(NULL);
     if (!device)
     {
         printf("error %d: cannot create device\n", rtcGetDeviceError(NULL));
@@ -49,24 +51,24 @@ device_t device_init()
     return device;
 }
 
-void device_destroy(device_t device)
+void device_destroy(Device device)
 {
     rtcReleaseDevice(device);
 }
 
 
-int scene_is_mask(scene_t* scene, int index)
+int scene_is_mask(Scene* scene, int index)
 {
     return scene->mask.test(index);
 }
 
 
-int scene_is_ghost(scene_t* scene, int index)
+int scene_is_ghost(Scene* scene, int index)
 {
     return scene->ghost.test(index);
 }
 
-void scene_init(scene_t* scene, device_t device)
+void scene_init(Scene* scene, Device device)
 {
     scene->num_meshes = 0;
     scene->mask.reset();
@@ -81,12 +83,12 @@ void scene_init(scene_t* scene, device_t device)
     scene->z_min = INFINITY;
 }
 
-void scene_finalize(scene_t* scene)
+void scene_finalize(Scene* scene)
 {
     rtcCommitScene(scene->embree_scene);
 }
 
-void scene_destroy(scene_t* scene)
+void scene_destroy(Scene* scene)
 {
     rtcReleaseScene(scene->embree_scene);
 }
@@ -116,10 +118,10 @@ void occlusionFilter(const struct RTCFilterFunctionNArguments* args)
 
 }
 
-void scene_add_model(scene_t* scene, mesh_t* mesh, vertex_t(*transform)(vector3_t, vector3_t, bool, void*), void* data, int flags)
+void scene_add_model(Scene* scene, Mesh* mesh, Vertex(*transform)(Vector3, Vector3, bool, void*), void* data, int flags)
 {
     //Add mesh to list of meshes
-    assert(scene->num_meshes < MAX_MESHES);
+    assert(scene->num_meshes < kMaxMeshes);
     scene->meshes[scene->num_meshes] = mesh;
     if (flags & MESH_MASK)scene->mask.set(scene->num_meshes);
     if (flags & MESH_GHOST)scene->ghost.set(scene->num_meshes);
@@ -155,7 +157,7 @@ void scene_add_model(scene_t* scene, mesh_t* mesh, vertex_t(*transform)(vector3_
             }
         }
 
-        vertex_t transformed_vertex = transform(mesh->vertices[i], mesh->normals[i], flat_shaded, data);
+        Vertex transformed_vertex = transform(mesh->vertices[i], mesh->normals[i], flat_shaded, data);
         vertices[3 * i + 0] = transformed_vertex.vertex.x;
         vertices[3 * i + 1] = transformed_vertex.vertex.y;
         vertices[3 * i + 2] = transformed_vertex.vertex.z;
@@ -183,7 +185,7 @@ void scene_add_model(scene_t* scene, mesh_t* mesh, vertex_t(*transform)(vector3_
     rtcReleaseGeometry(geom);
 }
 
-int scene_trace_ray(scene_t* scene, vector3_t origin, vector3_t direction, ray_hit_t* hit)
+int scene_trace_ray(Scene* scene, Vector3 origin, Vector3 direction, RayHit* hit)
 {
     struct RTCRayHit rayhit;
 
@@ -237,7 +239,7 @@ int scene_trace_ray(scene_t* scene, vector3_t origin, vector3_t direction, ray_h
     return 0;
 }
 
-int scene_trace_occlusion_ray(scene_t* scene, vector3_t origin, vector3_t direction)
+int scene_trace_occlusion_ray(Scene* scene, Vector3 origin, Vector3 direction)
 {
     struct RTCRay ray;
     ray.org_x = origin.x;
@@ -257,3 +259,5 @@ int scene_trace_occlusion_ray(scene_t* scene, vector3_t origin, vector3_t direct
 }
 
 
+
+}

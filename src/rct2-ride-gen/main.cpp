@@ -7,8 +7,8 @@
 
 #include <jansson.h>
 
-#include "renderer.h"
-#include "vectormath.h"
+#include "Renderer.hpp"
+#include "VectorMath.hpp"
 #include "Constants.hpp"
 #include "Json.hpp"
 #include "Logging.hpp"
@@ -50,7 +50,7 @@ namespace {
     }
 
     // The hand-tuned default lighting rig matches the historical setup.
-    std::vector<light_t> default_lights() {
+    std::vector<Light> default_lights() {
         return {
             {LIGHT_DIFFUSE, 0, vector3_normalize(vector3(0.0f, -1.0f, 0.0f)), 0.1f},
             {LIGHT_DIFFUSE, 0, vector3_normalize(vector3(0.0f, 0.5f, -1.0f)), 0.8f},
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
         output_directory = *od_str;
     }
 
-    std::vector<light_t> lights = default_lights();
+    std::vector<Light> lights = default_lights();
     if (json_t *lights_json = json_object_get(root, "lights")) {
         auto loaded = loadLights(lights_json);
         if (!loaded) {
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    context_t context;
+    Context context;
     context_init(
         &context,
         lights.data(), static_cast<int>(lights.size()),

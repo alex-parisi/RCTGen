@@ -6,17 +6,19 @@
 // literals, std::clamp, etc.) breaks that equivalence by 1 ULP on borderline
 // pixels.
 
-#include "palette.h"
+#include "Palette.hpp"
 
 #include <cmath>
 #include <cstdio>
 
-float vector3_get_luma(vector3_t color) noexcept
+namespace RCTGen {
+
+float vector3_get_luma(Vector3 color) noexcept
 {
     return 0.299 * color.x + 0.587 * color.y + 0.114 * color.z;
 }
 
-float vector3_get_max(vector3_t color) noexcept
+float vector3_get_max(Vector3 color) noexcept
 {
     return fmax(fmax(color.x, color.y), color.z);
 }
@@ -33,12 +35,12 @@ float linear2srgb(float x) noexcept
     return 1.055 * std::pow(x, 1.0 / 2.4) - 0.055;
 }
 
-vector3_t vector_from_color(color_t color)
+Vector3 vector_from_color(Color color)
 {
     return vector3(srgb2linear(color.r / 255.0), srgb2linear(color.g / 255.0), srgb2linear(color.b / 255.0));
 }
 
-color_t color_from_vector(vector3_t v)
+Color color_from_vector(Vector3 v)
 {
     // Math is deliberately written so every intermediate is double: fmax/fmin
     // promote float to double, and `* 255.0 + 0.4999` keeps it in double until
@@ -50,7 +52,7 @@ color_t color_from_vector(vector3_t v)
     return {to_u8(v.x), to_u8(v.y), to_u8(v.z)};
 }
 
-uint8_t palette_get_nearest(palette_t* palette, uint8_t region, vector3_t target, vector3_t* error)
+uint8_t palette_get_nearest(Palette* palette, uint8_t region, Vector3 target, Vector3* error)
 {
 
     uint8_t nearest_index = palette->regions[region].start_indices[0];
@@ -63,7 +65,7 @@ uint8_t palette_get_nearest(palette_t* palette, uint8_t region, vector3_t target
         for (int i = start_index; i < end_index; i++)
         {
             float error;
-            vector3_t color = vector_from_color(palette->regions[region].remap ? palette->remap_colors[i - start_index] : palette->colors[i]);
+            Vector3 color = vector_from_color(palette->regions[region].remap ? palette->remap_colors[i - start_index] : palette->colors[i]);
             error = vector3_norm(vector3_sub(target, color));
 
             if (error < minimum_error)
@@ -79,9 +81,9 @@ uint8_t palette_get_nearest(palette_t* palette, uint8_t region, vector3_t target
     return nearest_index;
 }
 
-palette_t palette_rct2()
+Palette palette_rct2()
 {
-    palette_t palette = {
+    Palette palette = {
     0,
     {{
     {3,{{10,214,240,0}},{{202,227,243,0}},false},
@@ -364,4 +366,5 @@ palette_t palette_rct2()
     {239,243,243},
     }} };
     return palette;
+}
 }
