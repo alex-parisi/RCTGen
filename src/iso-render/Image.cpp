@@ -289,7 +289,7 @@ namespace RCTGen {
         }
     };
 
-    void image_new(Image *image, uint16_t width, uint16_t height, int16_t x_offset, int16_t y_offset, uint16_t flags) {
+    void image_new(Image *image, uint16_t width, uint16_t height, int16_t x_offset, int16_t y_offset) {
         image->width = width;
         image->height = height;
         image->x_offset = x_offset;
@@ -351,7 +351,6 @@ namespace RCTGen {
         image->y_offset = 0;
 
         png_byte color_type = png_get_color_type(png, info);
-        png_byte bit_depth = png_get_bit_depth(png, info);
 
         if (color_type != PNG_COLOR_TYPE_PALETTE) {
             fclose(file);

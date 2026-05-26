@@ -69,7 +69,7 @@ namespace RCTGen {
         scene_init(&(context->rt_scene), context->rt_device);
     }
 
-    Vertex linear_transform(Vector3 vertex, Vector3 normal, const bool flat_shaded, void *matptr) {
+    Vertex linear_transform(Vector3 vertex, Vector3 normal, const bool /*flat_shaded*/, void *matptr) {
         Transform transform = *((Transform *) matptr);
         Vertex out;
         out.vertex = transform_vector(transform, vertex);
@@ -511,19 +511,16 @@ namespace RCTGen {
                     Vector3 color = vector3(0, 0, 0);
                     float weight = 0;
                     float total_weight = 0;
-                    int inside_samples = 0;
                     for (int i = 0; i < AA_NUM_SAMPLES_U * AA_NUM_SAMPLES_V; i++) {
                         if ((!(subsamples[i].flags & MATERIAL_NO_BLEED) || (flags & MATERIAL_NO_BLEED)) && !((
                                 subsamples[i].ghost_depth <= depth + 4 && subsamples[i].depth > depth + 4))) {
                             if (!(subsamples[i].depth > depth + 4 || (
                                       subsamples[i].region == kFragmentUnused && (!subsamples[i].flags) &
-                                          MATERIAL_IS_MASK) || (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))
+                                      MATERIAL_IS_MASK) || (subsamples[i].flags & MATERIAL_IS_VISIBLE_MASK)))
                             //TODO assumes there's only one material with NO_BLEED set 
                             {
                                 color = vector3_add(color, vector3_mult(subsamples[i].color, AA_SAMPLE_WEIGHT));
                                 weight += AA_SAMPLE_WEIGHT;
-
-                                inside_samples++;
                             }
                             total_weight += AA_SAMPLE_WEIGHT;
                         }

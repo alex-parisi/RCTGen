@@ -121,7 +121,7 @@ namespace RCTGen {
                 }
                 json_t *mesh_arr = load_optional_array(mesh);
                 if (mesh_arr == nullptr || (json_array_size(mesh_arr) != 1 && json_array_size(mesh_arr) !=
-                                            num_frames)) {
+                                            static_cast<std::size_t>(num_frames))) {
                     print_msg("Error: Number of elements in \"mesh_index\"(%zu) does not match number of frames(%d)",
                               json_array_size(mesh_arr), num_frames);
                     return 1;
@@ -357,7 +357,7 @@ namespace RCTGen {
     } // namespace
 } // namespace RCTGen
 
-int main(int argc, char *argv[]) {
+int main(int /*argc*/, char *argv[]) {
     using namespace RCTGen;
     project_t project{};
 

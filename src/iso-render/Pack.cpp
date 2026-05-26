@@ -219,7 +219,7 @@ namespace RCTGen {
         int width, height;
         pack_rects(images, num_images, &width, &height, x_coords, y_coords);
 
-        image_new(output, static_cast<std::uint16_t>(width), static_cast<std::uint16_t>(height), 0, 0, 0);
+        image_new(output, static_cast<std::uint16_t>(width), static_cast<std::uint16_t>(height), 0, 0);
         std::memset(output->pixels, 0, static_cast<std::size_t>(width) * height);
         int used_pixels = 0;
         for (int i = 0; i < num_images; ++i) {
@@ -256,7 +256,7 @@ namespace RCTGen {
         const int width = column_width * columns;
         const int height = row_height * rows;
 
-        image_new(output, static_cast<std::uint16_t>(width), static_cast<std::uint16_t>(height), 0, 0, 0);
+        image_new(output, static_cast<std::uint16_t>(width), static_cast<std::uint16_t>(height), 0, 0);
         std::memset(output->pixels, 0, static_cast<std::size_t>(width) * height);
 
         for (int i = 0; i < num_images; ++i) {

@@ -32,7 +32,7 @@
 //&& rayhit.hit.Ng_x*direction.x+rayhit.hit.Ng_y*direction.y+rayhit.hit.Ng_z*direction.z<0
 
 namespace RCTGen {
-    void rt_error(void *user_ptr, enum RTCError error, const char *str) {
+    void rt_error(void * /*user_ptr*/, enum RTCError error, const char *str) {
         printf("error %d: %s\n", error, str);
         exit(1);
     }
@@ -94,7 +94,7 @@ namespace RCTGen {
 
     void occlusionFilter(const struct RTCFilterFunctionNArguments *args) {
         //Check that packet size is 1 (I think this is guaranteed?)
-        const unsigned int N = args->N;
+        [[maybe_unused]] const unsigned int N = args->N;
         assert(N == 1);
 
         struct RTCRay *ray = (struct RTCRay *) args->ray;
@@ -104,7 +104,8 @@ namespace RCTGen {
     }
 
     void scene_add_model(Scene * scene, Mesh * mesh, Vertex(*transform)(Vector3, Vector3, bool, void*), void*data,
- 
+
+    
     int flags
     )
  {

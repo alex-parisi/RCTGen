@@ -365,7 +365,7 @@ namespace RCTGen {
 
         // Preview image (optional).
         if (Json *preview = json_object_get(json, "preview"); preview == nullptr) {
-            image_new(&project.preview, 1, 1, 0, 0, 0);
+            image_new(&project.preview, 1, 1, 0, 0);
         } else {
             auto preview_path = readString(preview, "preview");
             if (!preview_path)

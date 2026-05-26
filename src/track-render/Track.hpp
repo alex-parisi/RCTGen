@@ -69,7 +69,7 @@ namespace RCTGen {
         TrackFlag flags;
         CurveFn curve;
         float length;
-        Image *chainPattern;
+        Image *chainPattern = nullptr;
     };
 
     extern std::array<TrackSection, kNumTrackSections> kTrackSections;

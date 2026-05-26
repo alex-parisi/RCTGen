@@ -2730,8 +2730,6 @@ sprite_rotation_t base_sprite_rotations[708]=
         double h = 0.001;
         float reference = 1.0 / (2.5 * kTileSize);
 
-        int length = (int) floor(0.5 + 32.0 * (track_section->length / kTileSize));
-
         TrackPoint x = track_section->curve(dist);
         TrackPoint y = track_section->curve(dist + h);
 
@@ -2746,8 +2744,6 @@ sprite_rotation_t base_sprite_rotations[708]=
                fabs(vertical_factor) < 0.0001 ? 0 : (int) round(98.0 * reference / vertical_factor),
                fabs(lateral_factor) < 0.0001 ? 0 : (int) round(98.0 * reference / lateral_factor), 380 - 2 * count);
 
-        int t = 70;
-        int c = 67 + 2 * (152);
         //	if(i>t)printf("%d\n",c-2*i);
         //float lateral_factor=total_lat/length;
         //float vertical_factor=total_vert/length;
@@ -2871,7 +2867,6 @@ printf("Finish angle %d\n",finish_angle);
 printf("Skip start %d\n",view==0||view==3);
 printf("Skip finish %d %d\n",(((finish_angle&0xFE)+2*view)%8==2)||(((finish_angle&0xFE)+2*view)%8==4),((finish_angle&0xFE)+2*view)%8);
 */
-        int end_angle = ((finish_angle & 0xFE) + 2 * view) % 8;
         int skip_start = view == 0 || view == 3;
         int skip_final = 0; //end_angle ==2||end_angle ==4;
 

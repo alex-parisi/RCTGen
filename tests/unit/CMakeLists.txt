@@ -18,8 +18,6 @@ include(GoogleTest)
 
 add_executable(rct2_ride_gen_unit_tests
         rct2-ride-gen/Constants.t.cpp
-        rct2-ride-gen/Json.t.cpp
-        rct2-ride-gen/Logging.t.cpp
         rct2-ride-gen/SpriteRenderer.t.cpp
         rct2-ride-gen/ProjectLoader.t.cpp
 )
@@ -29,3 +27,16 @@ target_link_libraries(rct2_ride_gen_unit_tests PRIVATE
 )
 
 gtest_discover_tests(rct2_ride_gen_unit_tests)
+
+add_executable(rctgen_util_unit_tests
+        util/Json.t.cpp
+        util/Logging.t.cpp
+)
+# Json.t.cpp uses Constants.hpp from rct2-ride-gen as test fixtures (enum/flag
+# name arrays); rct2_ride_gen_lib transitively links RctgenUtil.
+target_link_libraries(rctgen_util_unit_tests PRIVATE
+    rct2_ride_gen_lib
+    GTest::gtest_main
+)
+
+gtest_discover_tests(rctgen_util_unit_tests)

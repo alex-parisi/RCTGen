@@ -23,7 +23,7 @@ namespace RCTGen {
     };
 
     void image_new(Image *image, std::uint16_t width, std::uint16_t height,
-                   std::int16_t x_offset, std::int16_t y_offset, std::uint16_t flags);
+                   std::int16_t x_offset, std::int16_t y_offset);
 
     void image_copy(Image *src, Image *dst);
 
