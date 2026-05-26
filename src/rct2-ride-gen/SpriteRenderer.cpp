@@ -10,7 +10,6 @@
 #include "Logging.hpp"
 
 namespace RCTGen {
-
     namespace {
         using std::numbers::pi;
         using std::numbers::sqrt2;

@@ -234,13 +234,15 @@ namespace {
         if (!preloaded && json_object_get(json, "brake_length") == nullptr) trackType.brakeLength = kTileSize;
 
         if (has_flag(trackType.flags, TrackTypeFlag::tieAtBoundary)) {
-            if (auto r = loadOptionalFloat(json, "tie_length", trackType.tieLength, kTileSize, !preloaded); !r) return
-                    r;
+            if (auto r = loadOptionalFloat(json, "tie_length", trackType.tieLength, kTileSize, !preloaded); !r)
+                return
+                        r;
         }
 
         if (auto r = loadOptionalFloat(json, "z_offset", trackType.zOffset, 1.0f, !preloaded); !r) return r;
-        if (auto r = loadOptionalFloat(json, "support_spacing", trackType.supportSpacing, kTileSize, false); !r) return
-                r;
+        if (auto r = loadOptionalFloat(json, "support_spacing", trackType.supportSpacing, kTileSize, false); !r)
+            return
+                    r;
         if (!preloaded && json_object_get(json, "support_spacing") == nullptr) trackType.supportSpacing = kTileSize;
         if (auto r = loadOptionalFloat(json, "pivot", trackType.pivot, kTileSize, false); !r) return r;
         if (!preloaded && json_object_get(json, "pivot") == nullptr) trackType.pivot = 0.0f;

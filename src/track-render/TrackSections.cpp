@@ -142,12 +142,12 @@ namespace RCTGen {
         float u = reparameterize(pa, pb, pc, pd, pe, pf, pg, distance);
         Vector3 point = vector3(cubic(xa, xb, xc, xd, u), cubic(ya, yb, yc, yd, u), cubic(za, zb, zc, zd, u));
         Vector3 tangent = vector3_normalize(vector3(cubic_derivative(xa, xb, xc, u), cubic_derivative(ya, yb, yc, u),
-                                                      cubic_derivative(za, zb, zc, u)));
+                                                    cubic_derivative(za, zb, zc, u)));
         Vector3 second_derivative = vector3(cubic_second_derivative(xa, xb, u), cubic_second_derivative(ya, yb, u),
-                                              cubic_second_derivative(za, zb, u));
+                                            cubic_second_derivative(za, zb, u));
         Vector3 normal = vector3_normalize(vector3_sub(second_derivative,
-                                                         vector3_mult(
-                                                             tangent, vector3_dot(tangent, second_derivative))));
+                                                       vector3_mult(
+                                                           tangent, vector3_dot(tangent, second_derivative))));
         Vector3 binormal = vector3_cross(normal, tangent);
 
         TrackPoint track_point;

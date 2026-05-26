@@ -247,9 +247,11 @@ namespace RCTGen {
                 else if (has_flag(section->flags, TrackFlag::exit90DegRight)) endAngle += 1;
                 else if (has_flag(section->flags, TrackFlag::exit180Deg)) endAngle += 2;
                 else if (has_flag(section->flags, TrackFlag::exit45DegLeft) && any_of(
-                             section->flags, TrackFlag::diagonal | TrackFlag::diagonal2)) endAngle -= 1;
+                             section->flags, TrackFlag::diagonal | TrackFlag::diagonal2))
+                    endAngle -= 1;
                 else if (has_flag(section->flags, TrackFlag::exit45DegRight) && !any_of(
-                             section->flags, TrackFlag::diagonal | TrackFlag::diagonal2)) endAngle += 1;
+                             section->flags, TrackFlag::diagonal | TrackFlag::diagonal2))
+                    endAngle += 1;
                 if (endAngle < 0) endAngle += 4;
                 if (endAngle > 3) endAngle -= 4;
 
@@ -424,8 +426,8 @@ namespace RCTGen {
                     TrackPoint supportPoint = onlyYaw(trackPoint);
 
                     Matrix3 rotation = matrix(supportPoint.binormal.x, supportPoint.normal.x, supportPoint.tangent.x,
-                                               supportPoint.binormal.y, supportPoint.normal.y, supportPoint.tangent.y,
-                                               supportPoint.binormal.z, supportPoint.normal.z, supportPoint.tangent.z);
+                                              supportPoint.binormal.y, supportPoint.normal.y, supportPoint.tangent.y,
+                                              supportPoint.binormal.z, supportPoint.normal.z, supportPoint.tangent.z);
                     if (bankAngle >= 0) rotation = matrix_mult(views[2], rotation);
 
                     Vector3 translation = changeCoordinates(supportPoint.position);

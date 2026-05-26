@@ -26,7 +26,6 @@
 namespace fs = std::filesystem;
 
 namespace RCTGen {
-
     namespace {
         // friction_sound_id table, indexed by the running_sound enum from JSON.
         // Preserves the historical mapping (which does not align name-for-name

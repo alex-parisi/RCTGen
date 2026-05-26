@@ -13,11 +13,11 @@ target_include_directories(IsoRender PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 # Public deps leak through IsoRender's own headers: RayTrace.hpp pulls embree,
 # Image.hpp pulls libpng. Everything else is an implementation detail.
 target_link_libraries(IsoRender
-    PUBLIC
+        PUBLIC
         rctgen_common_flags
         PNG::PNG
         embree
-    PRIVATE
+        PRIVATE
         ZLIB::ZLIB
         assimp::assimp
 )

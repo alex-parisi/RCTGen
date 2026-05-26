@@ -29,6 +29,7 @@ namespace RCTGen {
     constexpr Color color(std::uint8_t r, std::uint8_t g, std::uint8_t b) noexcept { return {r, g, b}; }
 
     Vector3 vector_from_color(Color c);
+
     Color color_from_vector(Vector3 vec);
 
     // ASSUME: region < MAX_REGION
