@@ -6,8 +6,8 @@
 using namespace RCTGen;
 
 namespace {
-constexpr VehicleFlag kNoVehicleFlags = static_cast<VehicleFlag>(0);
-constexpr SpriteFlag kNoSpriteFlags = static_cast<SpriteFlag>(0);
+    constexpr VehicleFlag kNoVehicleFlags = static_cast<VehicleFlag>(0);
+    constexpr SpriteFlag kNoSpriteFlags = static_cast<SpriteFlag>(0);
 } // namespace
 
 TEST(CountSprites, NoFlagsZero) {
@@ -102,16 +102,16 @@ TEST(CountSprites, RestraintAddsOnTopOfSpriteCount) {
 TEST(CountSprites, AllSpriteFlagsSum) {
     // Sum of every per-group value above.
     constexpr int expected =
-        32 + 72 + 80 + 116 + 24 + 80 + 40 + 128 + 16 + 16 + 48 + 128 + 16 + 80 + 160 + 112;
+            32 + 72 + 80 + 116 + 24 + 80 + 40 + 128 + 16 + 16 + 48 + 128 + 16 + 80 + 160 + 112;
     SpriteFlag all = SpriteFlag::flatSlope;
-    for (auto f : {
-        SpriteFlag::gentleSlope, SpriteFlag::steepSlope, SpriteFlag::verticalSlope,
-        SpriteFlag::diagonalSlope, SpriteFlag::banking, SpriteFlag::inlineTwist,
-        SpriteFlag::slopeBankTransition, SpriteFlag::diagonalBankTransition,
-        SpriteFlag::slopedBankTransition, SpriteFlag::diagonalSlopedBankTransition,
-        SpriteFlag::slopedBankedTurn, SpriteFlag::bankedSlopeTransition,
-        SpriteFlag::corkscrew, SpriteFlag::zeroGRoll, SpriteFlag::diveLoop,
-    }) {
+    for (auto f: {
+             SpriteFlag::gentleSlope, SpriteFlag::steepSlope, SpriteFlag::verticalSlope,
+             SpriteFlag::diagonalSlope, SpriteFlag::banking, SpriteFlag::inlineTwist,
+             SpriteFlag::slopeBankTransition, SpriteFlag::diagonalBankTransition,
+             SpriteFlag::slopedBankTransition, SpriteFlag::diagonalSlopedBankTransition,
+             SpriteFlag::slopedBankedTurn, SpriteFlag::bankedSlopeTransition,
+             SpriteFlag::corkscrew, SpriteFlag::zeroGRoll, SpriteFlag::diveLoop,
+         }) {
         all |= f;
     }
     EXPECT_EQ(countSprites(all, kNoVehicleFlags), expected);

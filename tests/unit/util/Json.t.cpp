@@ -17,38 +17,39 @@ namespace fs = std::filesystem;
 using namespace RCTGen;
 
 namespace {
+    class TempJsonFile {
+    public:
+        explicit TempJsonFile(std::string_view contents) {
+            const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+            path_ = fs::temp_directory_path() /
+                    ("rctgen_json_test_" + std::to_string(stamp) + "_" +
+                     std::to_string(counter_++) + ".json");
+            std::ofstream out(path_);
+            out << contents;
+        }
 
-class TempJsonFile {
-public:
-    explicit TempJsonFile(std::string_view contents) {
-        const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
-        path_ = fs::temp_directory_path() /
-                ("rctgen_json_test_" + std::to_string(stamp) + "_" +
-                 std::to_string(counter_++) + ".json");
-        std::ofstream out(path_);
-        out << contents;
+        ~TempJsonFile() {
+            std::error_code ec;
+            fs::remove(path_, ec);
+        }
+
+        TempJsonFile(const TempJsonFile &) = delete;
+
+        TempJsonFile &operator=(const TempJsonFile &) = delete;
+
+        const fs::path &path() const { return path_; }
+
+    private:
+        fs::path path_;
+        static inline int counter_ = 0;
+    };
+
+    // Helper for terse JSON building in tests.
+    JsonRef makeJson(const char *src) {
+        json_error_t err;
+        json_t *j = json_loads(src, 0, &err);
+        return adoptJson(j);
     }
-    ~TempJsonFile() {
-        std::error_code ec;
-        fs::remove(path_, ec);
-    }
-    TempJsonFile(const TempJsonFile&) = delete;
-    TempJsonFile& operator=(const TempJsonFile&) = delete;
-
-    const fs::path& path() const { return path_; }
-
-private:
-    fs::path path_;
-    static inline int counter_ = 0;
-};
-
-// Helper for terse JSON building in tests.
-JsonRef makeJson(const char* src) {
-    json_error_t err;
-    json_t* j = json_loads(src, 0, &err);
-    return adoptJson(j);
-}
-
 } // namespace
 
 TEST(JsonRefcount, AdoptNullReturnsEmpty) {
@@ -62,7 +63,7 @@ TEST(JsonRefcount, BorrowNullReturnsEmpty) {
 }
 
 TEST(JsonRefcount, AdoptTakesOwnership) {
-    json_t* raw = json_integer(42);
+    json_t *raw = json_integer(42);
     ASSERT_NE(raw, nullptr);
     EXPECT_EQ(raw->refcount, 1);
     {
@@ -74,7 +75,7 @@ TEST(JsonRefcount, AdoptTakesOwnership) {
 }
 
 TEST(JsonRefcount, BorrowIncrementsRefcount) {
-    json_t* raw = json_integer(7);
+    json_t *raw = json_integer(7);
     ASSERT_NE(raw, nullptr);
     ASSERT_EQ(raw->refcount, 1);
     {
@@ -92,9 +93,9 @@ TEST(JsonRefcount, ReleaseNullReturnsNull) {
 
 TEST(JsonRefcount, ReleaseIncrementsRefcount) {
     JsonRef r = adoptJson(json_integer(3));
-    json_t* raw = r.get();
+    json_t *raw = r.get();
     ASSERT_EQ(raw->refcount, 1);
-    json_t* released = releaseJson(r);
+    json_t *released = releaseJson(r);
     EXPECT_EQ(released, raw);
     EXPECT_EQ(raw->refcount, 2);
     json_decref(released);
@@ -110,7 +111,7 @@ TEST(JsonLoadFile, ValidFileLoads) {
     TempJsonFile f(R"({"a": 1, "b": "two"})");
     auto r = loadFile(f.path());
     ASSERT_TRUE(r.has_value()) << r.error();
-    json_t* root = r->get();
+    json_t *root = r->get();
     ASSERT_TRUE(json_is_object(root));
     EXPECT_EQ(json_integer_value(json_object_get(root, "a")), 1);
 }
@@ -287,8 +288,8 @@ TEST(JsonReadFlagBits, MultipleFlags) {
 }
 
 TEST(JsonReadFlagBits, AllSpriteGroupNames) {
-    json_t* arr = json_array();
-    for (auto n : kSpriteGroupNames) {
+    json_t *arr = json_array();
+    for (auto n: kSpriteGroupNames) {
         json_array_append_new(arr, json_stringn(n.data(), n.size()));
     }
     JsonRef v = adoptJson(arr);
@@ -346,7 +347,7 @@ TEST(JsonAsArrayOrWrap, ScalarIsWrapped) {
 
 TEST(JsonMakeImageObject, FullObject) {
     JsonRef img = makeImageObject("images/car_0.png", 10, -5, 100, 200, 50, 25);
-    json_t* j = img.get();
+    json_t *j = img.get();
     ASSERT_TRUE(json_is_object(j));
     EXPECT_STREQ(json_string_value(json_object_get(j, "path")), "images/car_0.png");
     EXPECT_EQ(json_integer_value(json_object_get(j, "x")), 10);
@@ -360,7 +361,7 @@ TEST(JsonMakeImageObject, FullObject) {
 
 TEST(JsonMakeImageObject, OmitsNegativeSourceCoords) {
     JsonRef img = makeImageObject("images/preview.png", 0, 0, -1, -1, -1, -1);
-    json_t* j = img.get();
+    json_t *j = img.get();
     EXPECT_EQ(json_object_get(j, "src_x"), nullptr);
     EXPECT_EQ(json_object_get(j, "src_y"), nullptr);
     EXPECT_EQ(json_object_get(j, "src_width"), nullptr);

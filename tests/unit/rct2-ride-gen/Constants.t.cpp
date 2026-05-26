@@ -61,7 +61,7 @@ TEST(Constants, SpriteFlagValuesAreSingleBits) {
         SpriteFlag::corkscrew, SpriteFlag::zeroGRoll,
         SpriteFlag::diagonalSlopedBankTransition, SpriteFlag::diveLoop,
     };
-    for (auto f : flags) {
+    for (auto f: flags) {
         U v = static_cast<U>(f);
         EXPECT_NE(v, 0u);
         EXPECT_EQ(v & (v - 1), 0u) << "Value " << v << " is not a single bit";
@@ -79,9 +79,9 @@ TEST(Constants, NameTablesSized) {
 }
 
 TEST(Constants, NameTablesNonEmpty) {
-    for (auto n : kSpriteGroupNames) EXPECT_FALSE(n.empty());
-    for (auto n : kColorNames) EXPECT_FALSE(n.empty());
-    for (auto n : kRideFlagNames) EXPECT_FALSE(n.empty());
+    for (auto n: kSpriteGroupNames) EXPECT_FALSE(n.empty());
+    for (auto n: kColorNames) EXPECT_FALSE(n.empty());
+    for (auto n: kRideFlagNames) EXPECT_FALSE(n.empty());
 }
 
 TEST(Constants, RunningSoundValuesMatchEnum) {

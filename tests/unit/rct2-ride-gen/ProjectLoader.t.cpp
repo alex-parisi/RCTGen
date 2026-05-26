@@ -12,18 +12,16 @@
 using namespace RCTGen;
 
 namespace {
+    JsonRef parse(const char *src) {
+        json_error_t err;
+        return adoptJson(json_loads(src, 0, &err));
+    }
 
-JsonRef parse(const char* src) {
-    json_error_t err;
-    return adoptJson(json_loads(src, 0, &err));
-}
-
-constexpr const char* kSimpleModel = R"({
+    constexpr const char *kSimpleModel = R"({
     "mesh_index": 0,
     "position": [1.0, 2.0, 3.0],
     "orientation": [0.0, 90.0, 0.0]
 })";
-
 } // namespace
 
 // ---------- loadLights ----------
@@ -83,7 +81,7 @@ TEST(LoadLights, DirectionGetsNormalized) {
     auto r = loadLights(j.get());
     ASSERT_TRUE(r.has_value());
     ASSERT_EQ(r->size(), 1u);
-    const auto& d = (*r)[0].direction;
+    const auto &d = (*r)[0].direction;
     EXPECT_NEAR(std::sqrt(d.x * d.x + d.y * d.y + d.z * d.z), 1.0, 1e-5);
     EXPECT_NEAR(d.x, 0.6f, 1e-5);
     EXPECT_NEAR(d.y, 0.8f, 1e-5);
