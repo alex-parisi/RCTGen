@@ -8,9 +8,9 @@
 // floor() which promotes via C math.h to double) breaks byte-equivalence
 // on borderline sub-pixel rounding.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <png.h>
 #include "Image.hpp"
 
@@ -327,7 +327,7 @@ namespace RCTGen {
         if (!file) {
             return 1;
         }
-        png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+        png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
         if (!png) {
             fclose(file);
             return 1;
@@ -379,11 +379,11 @@ namespace RCTGen {
     }
 
     int image_write_png(Image *image, ImagePalette *palette, FILE *file) {
-        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-        if (png_ptr == NULL)return 1;
+        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+        if (png_ptr == nullptr)return 1;
 
         png_infop info_ptr = png_create_info_struct(png_ptr);
-        if (info_ptr == NULL) {
+        if (info_ptr == nullptr) {
             png_destroy_write_struct(&png_ptr, &info_ptr);
             return 1;
         }
@@ -398,13 +398,13 @@ namespace RCTGen {
                      PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
         //Set palette
-        if (palette == NULL)palette = &rct2_palette;
+        if (palette == nullptr)palette = &rct2_palette;
         png_set_PLTE(png_ptr, info_ptr, palette->colors, palette->num_colors);
 
         //Set transparent color
         if (palette->transparent_color >= 0) {
             png_byte transparency = palette->transparent_color;
-            png_set_tRNS(png_ptr, info_ptr, &transparency, 1, NULL);
+            png_set_tRNS(png_ptr, info_ptr, &transparency, 1, nullptr);
         }
 
         png_byte **row_pointers = (png_byte **) png_malloc(png_ptr, image->height * sizeof(png_byte *));
@@ -415,7 +415,7 @@ namespace RCTGen {
         //Write file
         png_init_io(png_ptr, file);
         png_set_rows(png_ptr, info_ptr, row_pointers);
-        png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+        png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, nullptr);
         png_free(png_ptr, row_pointers);
         png_destroy_write_struct(&png_ptr, &info_ptr);
         return 0;

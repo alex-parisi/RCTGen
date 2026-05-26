@@ -14,10 +14,10 @@ namespace {
 } // namespace
 
 TEST(ColorCtor, BuildsExpectedValues) {
-    constexpr Color c = color(10, 20, 30);
-    EXPECT_EQ(c.r, 10);
-    EXPECT_EQ(c.g, 20);
-    EXPECT_EQ(c.b, 30);
+    constexpr Color kC = color(10, 20, 30);
+    EXPECT_EQ(kC.r, 10);
+    EXPECT_EQ(kC.g, 20);
+    EXPECT_EQ(kC.b, 30);
 }
 
 TEST(VectorFromColor, BlackIsZero) {

@@ -8,10 +8,10 @@
 // sqrt() which promotes via C math.h to double) breaks byte-equivalence
 // on borderline shared-normal mesh vertices.
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
+#include <cstring>
 
 #include <png.h>
 
@@ -34,7 +34,7 @@ namespace RCTGen {
         if (!fp) {
             return 1;
         }
-        png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+        png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
         if (!png) {
             fclose(fp);
             return 2;
@@ -167,28 +167,28 @@ namespace RCTGen {
             //Check for remappable materials
             struct aiString name;
             if (aiGetMaterialString(mat, AI_MATKEY_NAME, &name) == AI_SUCCESS) {
-                if (strstr(name.data, "Remap1") != NULL) {
+                if (strstr(name.data, "Remap1") != nullptr) {
                     output->materials[i].flags |= MATERIAL_IS_REMAPPABLE;
                     output->materials[i].region = 1;
-                } else if (strstr(name.data, "Remap2") != NULL) {
+                } else if (strstr(name.data, "Remap2") != nullptr) {
                     output->materials[i].flags |= MATERIAL_IS_REMAPPABLE;
                     output->materials[i].region = 2;
-                } else if (strstr(name.data, "Remap3") != NULL) {
+                } else if (strstr(name.data, "Remap3") != nullptr) {
                     output->materials[i].flags |= MATERIAL_IS_REMAPPABLE;
                     output->materials[i].region = 3;
-                } else if (strstr(name.data, "Greyscale") != NULL) {
+                } else if (strstr(name.data, "Greyscale") != nullptr) {
                     output->materials[i].region = 4;
-                } else if (strstr(name.data, "Peep") != NULL)output->materials[i].region = 5;
-                else if (strstr(name.data, "Chain") != NULL) {
+                } else if (strstr(name.data, "Peep") != nullptr)output->materials[i].region = 5;
+                else if (strstr(name.data, "Chain") != nullptr) {
                     output->materials[i].region = 6;
                 }
-                if (strstr(name.data, "VisibleMask") != NULL)output->materials[i].flags |= MATERIAL_IS_VISIBLE_MASK;
-                else if (strstr(name.data, "Mask") != NULL)output->materials[i].flags |= MATERIAL_IS_MASK;
-                if (strstr(name.data, "NoAO") != NULL)output->materials[i].flags |= MATERIAL_NO_AO;
-                if (strstr(name.data, "Edge") != NULL)output->materials[i].flags |= MATERIAL_BACKGROUND_AA;
-                if (strstr(name.data, "DarkEdge") != NULL)output->materials[i].flags |= MATERIAL_BACKGROUND_AA_DARK;
-                if (strstr(name.data, "NoBleed") != NULL)output->materials[i].flags |= MATERIAL_NO_BLEED;
-                if (strstr(name.data, "FlatShaded") != NULL)output->materials[i].flags |= MATERIAL_IS_FLAT_SHADED;
+                if (strstr(name.data, "VisibleMask") != nullptr)output->materials[i].flags |= MATERIAL_IS_VISIBLE_MASK;
+                else if (strstr(name.data, "Mask") != nullptr)output->materials[i].flags |= MATERIAL_IS_MASK;
+                if (strstr(name.data, "NoAO") != nullptr)output->materials[i].flags |= MATERIAL_NO_AO;
+                if (strstr(name.data, "Edge") != nullptr)output->materials[i].flags |= MATERIAL_BACKGROUND_AA;
+                if (strstr(name.data, "DarkEdge") != nullptr)output->materials[i].flags |= MATERIAL_BACKGROUND_AA_DARK;
+                if (strstr(name.data, "NoBleed") != nullptr)output->materials[i].flags |= MATERIAL_NO_BLEED;
+                if (strstr(name.data, "FlatShaded") != nullptr)output->materials[i].flags |= MATERIAL_IS_FLAT_SHADED;
             }
 
             aiColor4D diffuse;
@@ -215,7 +215,7 @@ namespace RCTGen {
             if (aiGetMaterialColor(mat, AI_MATKEY_COLOR_SPECULAR, &specular) == AI_SUCCESS) {
                 output->materials[i].specular_color = vector3(specular.r, specular.g, specular.b);
                 float specular_strength;
-                if (aiGetMaterialFloatArray(mat, AI_MATKEY_SHININESS_STRENGTH, &specular_strength, NULL) ==
+                if (aiGetMaterialFloatArray(mat, AI_MATKEY_SHININESS_STRENGTH, &specular_strength, nullptr) ==
                     AI_SUCCESS) {
                     output->materials[i].specular_color = vector3_mult(output->materials[i].specular_color,
                                                                        specular_strength);
@@ -224,7 +224,7 @@ namespace RCTGen {
             }
 
             float specular_exponent;
-            if (aiGetMaterialFloatArray(mat, AI_MATKEY_SHININESS, &specular_exponent, NULL) == AI_SUCCESS) {
+            if (aiGetMaterialFloatArray(mat, AI_MATKEY_SHININESS, &specular_exponent, nullptr) == AI_SUCCESS) {
                 output->materials[i].specular_exponent = specular_exponent;
                 //printf("%d\n",output->materials[i].specular_hardness);
             }

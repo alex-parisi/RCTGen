@@ -8,15 +8,15 @@
 using namespace RCTGen;
 
 TEST(TrackConstants, TrackFlagBitwiseOr) {
-    constexpr auto combined = TrackFlag::diagonal | TrackFlag::vertical;
+    constexpr auto kCombined = TrackFlag::diagonal | TrackFlag::vertical;
     using U = std::underlying_type_t<TrackFlag>;
-    EXPECT_EQ(static_cast<U>(combined),
+    EXPECT_EQ(static_cast<U>(kCombined),
               static_cast<U>(TrackFlag::diagonal) | static_cast<U>(TrackFlag::vertical));
 }
 
 TEST(TrackConstants, TrackFlagBitwiseAnd) {
-    constexpr auto combined = TrackFlag::entryBankLeft | TrackFlag::exitBankLeft;
-    EXPECT_EQ(static_cast<std::uint32_t>(combined & TrackFlag::entryBankLeft),
+    constexpr auto kCombined = TrackFlag::entryBankLeft | TrackFlag::exitBankLeft;
+    EXPECT_EQ(static_cast<std::uint32_t>(kCombined & TrackFlag::entryBankLeft),
               static_cast<std::uint32_t>(TrackFlag::entryBankLeft));
 }
 
@@ -50,10 +50,10 @@ TEST(TrackConstants, SpecialMaskIsolatesSpecialBits) {
 }
 
 TEST(TrackConstants, AnyOfDetectsOverlap) {
-    constexpr auto set = TrackFlag::diagonal | TrackFlag::entryBankLeft;
-    EXPECT_TRUE(any_of(set, TrackFlag::entryBankLeft));
-    EXPECT_TRUE(any_of(set, TrackFlag::bankLeft)); // bankLeft includes entryBankLeft
-    EXPECT_FALSE(any_of(set, TrackFlag::vertical));
+    constexpr auto kSet = TrackFlag::diagonal | TrackFlag::entryBankLeft;
+    EXPECT_TRUE(any_of(kSet, TrackFlag::entryBankLeft));
+    EXPECT_TRUE(any_of(kSet, TrackFlag::bankLeft)); // bankLeft includes entryBankLeft
+    EXPECT_FALSE(any_of(kSet, TrackFlag::vertical));
 }
 
 TEST(TrackConstants, TrackTypeFlagOps) {

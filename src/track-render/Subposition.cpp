@@ -17,12 +17,14 @@
 #include "Constants.hpp"
 #include "Track.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-macro-usage) -- byte-equivalent output requires verbatim C macro semantics.
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 #ifndef M_PI_2
 #define M_PI_2 (M_PI / 2.0)
 #endif
+// NOLINTEND(cppcoreguidelines-macro-usage)
 
 namespace RCTGen {
     //       y
@@ -63,6 +65,7 @@ namespace RCTGen {
         int bank_sprite;
     } subposition_t;
 
+    // NOLINTBEGIN(cppcoreguidelines-macro-usage) -- see header comment: byte-equivalent output requires verbatim C macros (double-promotion + textual substitution).
 #define MAX_SUBPOSITION_POINTS 1024
 
 #define Y(i) (M_PI*i/16.0)
@@ -93,6 +96,7 @@ namespace RCTGen {
 #define CLY(angle) (-CRY((angle)))
 #define CLP(angle) (-CRP(-(angle)))
 #define CLR(angle) (-CRR((angle)))
+    // NOLINTEND(cppcoreguidelines-macro-usage)
 
 
     /*
@@ -2643,6 +2647,7 @@ sprite_rotation_t base_sprite_rotations[708]=
         {26, 7, 13,Y(26), -GS, -6 * M_PI_8},
     };
 
+    // NOLINTNEXTLINE(cppcoreguidelines-macro-usage) -- byte-equivalent output requires verbatim C macro semantics.
 #define NUM_SPRITE_GROUPS 9
     int sprite_group_counts[NUM_SPRITE_GROUPS] = {176, 172, 408, 40, 80, 160, 160, 320, 144};
     const sprite_rotation_t *sprite_group_rotations[NUM_SPRITE_GROUPS] = {

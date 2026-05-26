@@ -18,7 +18,8 @@ namespace RCTGen {
     // constants (rather than enum class) because renderer.cpp / raytrace.cpp
     // mix-and-match these with implicit bool conversion (`if (flags & X)`),
     // and that idiomatic style would require `has_flag()` everywhere with a
-    // scoped enum. The historical bit layout is preserved exactly.
+    // scoped enum. The historical bit layout and names are preserved exactly.
+    // NOLINTBEGIN(readability-identifier-naming) -- legacy bit-flag names, see comment above.
     inline constexpr std::uint16_t MATERIAL_HAS_TEXTURE = 1u << 0;
     inline constexpr std::uint16_t MATERIAL_IS_REMAPPABLE = 1u << 1;
     inline constexpr std::uint16_t MATERIAL_IS_MASK = 1u << 2;
@@ -28,6 +29,7 @@ namespace RCTGen {
     inline constexpr std::uint16_t MATERIAL_IS_VISIBLE_MASK = 1u << 6;
     inline constexpr std::uint16_t MATERIAL_NO_BLEED = 1u << 7;
     inline constexpr std::uint16_t MATERIAL_IS_FLAT_SHADED = 1u << 8;
+    // NOLINTEND(readability-identifier-naming)
 
     struct Material {
         std::uint16_t flags;

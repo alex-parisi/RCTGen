@@ -14,17 +14,17 @@
 
 namespace RCTGen {
     namespace {
-        inline constexpr float TILE_SIZE = 3.3f;
-        inline constexpr float CLEARANCE_HEIGHT_VAL = 0.5f * TILE_SIZE * 0.40824829046f; // 0.5 / sqrt(6)
-        inline constexpr std::size_t MAX_MESHES_PER_MODEL = 16;
-        inline constexpr std::size_t MAX_FRAMES = 16;
-        inline constexpr std::size_t MAX_ITEMS = 256;
+        inline constexpr float kTileSize = 3.3f;
+        inline constexpr float kClearanceHeightVal = 0.5f * kTileSize * 0.40824829046f; // 0.5 / sqrt(6)
+        inline constexpr std::size_t kMaxMeshesPerModel = 16;
+        inline constexpr std::size_t kMaxFrames = 16;
+        inline constexpr std::size_t kMaxItems = 256;
 
         struct model_t {
             std::int32_t num_meshes;
-            std::int32_t mesh_index[MAX_MESHES_PER_MODEL][MAX_FRAMES];
-            Vector3 position[MAX_MESHES_PER_MODEL][MAX_FRAMES];
-            Vector3 orientation[MAX_MESHES_PER_MODEL][MAX_FRAMES];
+            std::int32_t mesh_index[kMaxMeshesPerModel][kMaxFrames];
+            Vector3 position[kMaxMeshesPerModel][kMaxFrames];
+            Vector3 orientation[kMaxMeshesPerModel][kMaxFrames];
         };
 
         struct item_t {
@@ -38,7 +38,7 @@ namespace RCTGen {
             std::uint32_t num_meshes;
             std::uint32_t num_items;
             Mesh meshes[kMaxMeshes];
-            item_t items[MAX_ITEMS];
+            item_t items[kMaxItems];
         };
 
         void print_msg(const char *fmt, ...) {
@@ -289,22 +289,22 @@ namespace RCTGen {
 
         void project_add_model_to_context(project_t *project, Context *context, model_t *model, int frame,
                                           int rotation) {
-            constexpr float offsets[8] = {0, -1, 0, -1.5f, 0, -1, 0, -1.5f};
+            constexpr float kOffsets[8] = {0, -1, 0, -1.5f, 0, -1, 0, -1.5f};
             for (int i = 0; i < model->num_meshes; ++i) {
                 if (model->mesh_index[i][frame] == -1) continue;
                 const Vector3 orientation = model->orientation[i][frame] * static_cast<float>(std::numbers::pi / 180.0);
                 const Matrix3 rot = matrix_mult(rotate_y(orientation.x),
                                                 matrix_mult(rotate_z(orientation.y), rotate_x(orientation.z)));
                 const Vector3 pos = model->position[i][frame]
-                                    + vector3(CLEARANCE_HEIGHT_VAL * offsets[2 * rotation] / 8.0f,
-                                              CLEARANCE_HEIGHT_VAL * offsets[2 * rotation + 1] / 8.0f, 0);
+                                    + vector3(kClearanceHeightVal * kOffsets[2 * rotation] / 8.0f,
+                                              kClearanceHeightVal * kOffsets[2 * rotation + 1] / 8.0f, 0);
                 context_add_model(context, project->meshes + model->mesh_index[i][frame], transform(rot, pos), 0);
             }
         }
 
         int project_export(project_t *project, Context *context, json_t *sprites, const char *base_dir,
                            const char *output_dir) {
-            Image images[4 * MAX_FRAMES];
+            Image images[4 * kMaxFrames];
 
             for (std::uint32_t i = 0; i < project->num_items; ++i) {
                 std::printf("Rendering item %u\n", i);
@@ -427,7 +427,7 @@ int main(int /*argc*/, char *argv[]) {
     }
 
     Context context;
-    context_init(&context, lights, num_lights, 1, palette_rct2(), TILE_SIZE);
+    context_init(&context, lights, num_lights, 1, palette_rct2(), kTileSize);
 
     if (project_export(&project, &context, sprites, base_dir, sprite_dir)) return 1;
 

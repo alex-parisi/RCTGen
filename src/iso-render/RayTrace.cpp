@@ -12,10 +12,11 @@
 
 #define NOMINMAX
 #define _USE_MATH_DEFINES
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
+// NOLINTNEXTLINE(modernize-deprecated-headers) -- see header comment: <cmath> would pull in std:: float overloads that break byte-exact goldens.
 #include <math.h>
-#include <assert.h>
+#include <cassert>
 #include <embree4/rtcore.h>
 #include "RayTrace.hpp"
 
@@ -26,6 +27,7 @@
 #undef max
 #endif
 #ifndef M_PI
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage) -- preserves C double-promotion; constexpr replacement breaks byte-exact goldens.
 #define M_PI 3.14159265358979323846
 #endif
 
@@ -38,12 +40,12 @@ namespace RCTGen {
     }
 
     Device device_init() {
-        Device device = rtcNewDevice(NULL);
+        Device device = rtcNewDevice(nullptr);
         if (!device) {
-            printf("error %d: cannot create device\n", rtcGetDeviceError(NULL));
+            printf("error %d: cannot create device\n", rtcGetDeviceError(nullptr));
             exit(1);
         }
-        rtcSetDeviceErrorFunction(device, rt_error, NULL);
+        rtcSetDeviceErrorFunction(device, rt_error, nullptr);
         return device;
     }
 
@@ -105,6 +107,7 @@ namespace RCTGen {
 
     void scene_add_model(Scene * scene, Mesh * mesh, Vertex(*transform)(Vector3, Vector3, bool, void*), void*data,
 
+
     
     int flags
     )
@@ -117,7 +120,7 @@ namespace RCTGen {
         scene->num_meshes++;
         //Create Embree geometry
         RTCGeometry geom = rtcNewGeometry(scene->embree_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-        if (geom == NULL) {
+        if (geom == nullptr) {
             printf("Failed allocating geometry\n");
             return;
         }

@@ -152,6 +152,3 @@ namespace RCTGen {
         return matrix(c, -s, 0, s, c, 0, 0, 0, 1);
     }
 }
-
-// Backward-compatibility helper macro; new code should prefer m(row, col).
-#define MATRIX_INDEX(m, row, col) ((m).entries[3 * (row) + (col)])

@@ -101,7 +101,7 @@ TEST(CountSprites, RestraintAddsOnTopOfSpriteCount) {
 
 TEST(CountSprites, AllSpriteFlagsSum) {
     // Sum of every per-group value above.
-    constexpr int expected =
+    constexpr int kExpected =
             32 + 72 + 80 + 116 + 24 + 80 + 40 + 128 + 16 + 16 + 48 + 128 + 16 + 80 + 160 + 112;
     SpriteFlag all = SpriteFlag::flatSlope;
     for (auto f: {
@@ -114,5 +114,5 @@ TEST(CountSprites, AllSpriteFlagsSum) {
          }) {
         all |= f;
     }
-    EXPECT_EQ(countSprites(all, kNoVehicleFlags), expected);
+    EXPECT_EQ(countSprites(all, kNoVehicleFlags), kExpected);
 }

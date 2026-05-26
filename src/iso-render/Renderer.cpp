@@ -13,13 +13,13 @@
 
 #define NOMINMAX
 #define _USE_MATH_DEFINES
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
-#include<string.h>
-#include<stdbool.h>
-#include<assert.h>
-#include<errno.h>
+#include <cstdio>
+#include <cstdlib>
+// NOLINTNEXTLINE(modernize-deprecated-headers) -- see header comment: <cmath> would pull in std:: float overloads that break byte-exact goldens.
+#include <math.h>
+#include <cstring>
+#include <cassert>
+#include <cerrno>
 #include <array>
 #include "Renderer.hpp"
 #include "Palette.hpp"
@@ -29,9 +29,13 @@
 
 namespace RCTGen {
     //3.67 metres per tile
+    // NOLINTNEXTLINE(cppcoreguidelines-macro-usage) -- preserves C double-promotion; constexpr replacement breaks byte-exact goldens.
 #define SQRT_2 1.4142135623731f
+    // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SQRT1_2 0.707106781f
+    // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SQRT_3 1.73205080757f
+    // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SQRT_6 2.44948974278f
 
     std::array<Matrix3, 4> views{
@@ -43,11 +47,13 @@ namespace RCTGen {
         }
     };
 
+    // NOLINTBEGIN(cppcoreguidelines-macro-usage) -- AO/AA sample counts are referenced by macros below; converting to constexpr breaks byte-exact accumulation order.
 #define AO_NUM_SAMPLES_U 8
 #define AO_NUM_SAMPLES_V 4
 #define AA_NUM_SAMPLES_U 4
 #define AA_NUM_SAMPLES_V 4
 #define AA_SAMPLE_WEIGHT (1.0/(AA_NUM_SAMPLES_U*AA_NUM_SAMPLES_V))
+    // NOLINTEND(cppcoreguidelines-macro-usage)
 
     void context_init(Context *context, Light *lights, uint32_t num_lights, uint32_t dither, Palette palette,
                       float upt) {
@@ -317,6 +323,7 @@ namespace RCTGen {
     }
 
 
+    // NOLINTNEXTLINE(cppcoreguidelines-macro-usage) -- function-like macro; preserves identical codegen vs a templated helper.
 #define FRAMEBUFFER_INDEX(fbf,x,y) (framebuffer->fragments[(x)+(y)*framebuffer->width])
 
 

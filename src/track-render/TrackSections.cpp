@@ -14,6 +14,7 @@
 #endif
 
 #include <cstdint>
+// NOLINTNEXTLINE(modernize-deprecated-headers) -- see header comment: <cmath> changes float promotion semantics and breaks byte-exact goldens.
 #include <math.h>
 
 #include "Constants.hpp"
@@ -21,9 +22,11 @@
 #include "Track.hpp"
 
 namespace RCTGen {
+    // NOLINTBEGIN(cppcoreguidelines-macro-usage) -- see header comment: macro vs constexpr changes C double-promotion semantics and breaks byte-exact goldens.
 #define NORM(x,y) (sqrt((x)*(x)+(y)*(y)))
 
 #define BANK_ANGLE 0.25*M_PI//(2.5/18.0)*M_PI
+    // NOLINTEND(cppcoreguidelines-macro-usage)
 
     float cubic(float a, float b, float c, float d, float x) {
         return x * (x * (x * a + b) + c) + d;
@@ -374,8 +377,10 @@ namespace RCTGen {
 
     //Unbanked turns
 
+    // NOLINTBEGIN(cppcoreguidelines-macro-usage) -- preserves C double-promotion; constexpr replacement breaks byte-exact goldens.
 #define PI 3.1415926
 #define SQRT_2 1.41421356237
+    // NOLINTEND(cppcoreguidelines-macro-usage)
 #define VERY_SMALL_TURN_LENGTH (0.25*M_PI*kTileSize)
 #define SMALL_TURN_LENGTH (0.75*PI*kTileSize)
 #define MEDIUM_TURN_LENGTH (1.25*PI*kTileSize)
@@ -1623,6 +1628,7 @@ namespace RCTGen {
 #define HALF_LOOP_SEGMENT1_LENGTH (0.540062*kTileSize)
 #define HALF_LOOP_SEGMENT2_LENGTH (HALF_LOOP_SEGMENT1_LENGTH+2.685141*kTileSize)
 #define HALF_LOOP_LENGTH (HALF_LOOP_SEGMENT2_LENGTH+1.956695*kTileSize)
+    // NOLINTBEGIN(cppcoreguidelines-macro-usage) -- preserves C double-promotion; constexpr replacement breaks byte-exact goldens.
 #define VERTICAL_LOOP_FACTOR 1.006604
 #define VERTICAL_LOOP_SEGMENT1_LENGTH (0.540062*kTileSize)
 #define VERTICAL_LOOP_SEGMENT2_LENGTH (VERTICAL_LOOP_SEGMENT1_LENGTH+2.686603*kTileSize)
@@ -1642,6 +1648,7 @@ namespace RCTGen {
 #define MEDIUM_HALF_LOOP_SEGMENT1_LENGTH (4.605006*kTileSize)
 #define MEDIUM_HALF_LOOP_SEGMENT2_LENGTH (2.988654*kTileSize)
 #define MEDIUM_HALF_LOOP_LENGTH ((MEDIUM_HALF_LOOP_SEGMENT1_LENGTH+MEDIUM_HALF_LOOP_SEGMENT2_LENGTH)*MEDIUM_HALF_LOOP_FACTOR)
+    // NOLINTEND(cppcoreguidelines-macro-usage)
 #define ZERO_G_ROLL_BASE_LENGTH (3.083249*kTileSize)
 #define ZERO_G_ROLL_LENGTH (3.266924*kTileSize)
 #define LARGE_ZERO_G_ROLL_BASE_LENGTH (5.385804*kTileSize)

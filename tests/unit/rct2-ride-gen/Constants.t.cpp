@@ -8,15 +8,15 @@
 using namespace RCTGen;
 
 TEST(Constants, SpriteFlagBitwiseOr) {
-    constexpr auto combined = SpriteFlag::flatSlope | SpriteFlag::gentleSlope;
+    constexpr auto kCombined = SpriteFlag::flatSlope | SpriteFlag::gentleSlope;
     using U = std::underlying_type_t<SpriteFlag>;
-    EXPECT_EQ(static_cast<U>(combined),
+    EXPECT_EQ(static_cast<U>(kCombined),
               static_cast<U>(SpriteFlag::flatSlope) | static_cast<U>(SpriteFlag::gentleSlope));
 }
 
 TEST(Constants, SpriteFlagBitwiseAnd) {
-    constexpr auto combined = SpriteFlag::flatSlope | SpriteFlag::gentleSlope;
-    EXPECT_EQ(static_cast<std::uint32_t>(combined & SpriteFlag::flatSlope),
+    constexpr auto kCombined = SpriteFlag::flatSlope | SpriteFlag::gentleSlope;
+    EXPECT_EQ(static_cast<std::uint32_t>(kCombined & SpriteFlag::flatSlope),
               static_cast<std::uint32_t>(SpriteFlag::flatSlope));
 }
 
@@ -29,16 +29,16 @@ TEST(Constants, SpriteFlagBitwiseOrAssign) {
 }
 
 TEST(Constants, HasFlagSpriteFlag) {
-    constexpr auto set = SpriteFlag::flatSlope | SpriteFlag::corkscrew;
-    EXPECT_TRUE(has_flag(set, SpriteFlag::flatSlope));
-    EXPECT_TRUE(has_flag(set, SpriteFlag::corkscrew));
-    EXPECT_FALSE(has_flag(set, SpriteFlag::diveLoop));
+    constexpr auto kSet = SpriteFlag::flatSlope | SpriteFlag::corkscrew;
+    EXPECT_TRUE(has_flag(kSet, SpriteFlag::flatSlope));
+    EXPECT_TRUE(has_flag(kSet, SpriteFlag::corkscrew));
+    EXPECT_FALSE(has_flag(kSet, SpriteFlag::diveLoop));
 }
 
 TEST(Constants, HasFlagRideFlag) {
-    constexpr auto set = RideFlag::noCollisionCrashes;
-    EXPECT_TRUE(has_flag(set, RideFlag::noCollisionCrashes));
-    EXPECT_FALSE(has_flag(set, RideFlag::riderControlsSpeed));
+    constexpr auto kSet = RideFlag::noCollisionCrashes;
+    EXPECT_TRUE(has_flag(kSet, RideFlag::noCollisionCrashes));
+    EXPECT_FALSE(has_flag(kSet, RideFlag::riderControlsSpeed));
 }
 
 TEST(Constants, HasFlagVehicleFlag) {
