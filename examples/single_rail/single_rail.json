@@ -5,7 +5,7 @@
 "description":"Roller coaster trains in which riders are seated single file",
 "capacity":"1 passenger per car",
 "preview":"examples/single_rail/preview.png",
-"sprites":["flat","gentle_slopes","steep_slopes","vertical_slopes","diagonals","banked_turns","inline_twists","banked_sloped_turns","corkscrews","zero_g_rolls"],
+"sprites":["flat","gentle_slopes","steep_slopes","vertical_slopes","diagonals","banked_turns","inline_twists","banked_sloped_turns","corkscrews","zero_g_rolls","diagonal_sloped_bank_transition","dive_loops"],
 "zero_cars":0,
 "min_cars_per_train":5,
 "max_cars_per_train":12,
